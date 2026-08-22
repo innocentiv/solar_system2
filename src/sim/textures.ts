@@ -482,10 +482,11 @@ export function glowSprite(): THREE.CanvasTexture {
   canvas.height = s;
   const ctx = getCtx(canvas);
   const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
-  g.addColorStop(0, "rgba(255, 230, 180, 1)");
-  g.addColorStop(0.18, "rgba(255, 190, 90, 0.55)");
-  g.addColorStop(0.42, "rgba(255, 140, 40, 0.16)");
-  g.addColorStop(0.75, "rgba(255, 110, 30, 0.04)");
+  g.addColorStop(0, "rgba(255, 244, 214, 1)");
+  g.addColorStop(0.14, "rgba(255, 214, 130, 0.9)");
+  g.addColorStop(0.3, "rgba(255, 170, 70, 0.45)");
+  g.addColorStop(0.55, "rgba(255, 130, 40, 0.14)");
+  g.addColorStop(0.8, "rgba(255, 110, 30, 0.04)");
   g.addColorStop(1, "rgba(255, 100, 20, 0)");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, s, s);

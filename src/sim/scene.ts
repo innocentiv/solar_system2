@@ -90,9 +90,9 @@ export function buildScene(container: HTMLElement): SceneRefs {
   composer.addPass(new RenderPass(scene, camera));
   const bloom = new UnrealBloomPass(
     new THREE.Vector2(container.clientWidth, container.clientHeight),
-    0.85, // strength
-    0.55, // radius
-    0.78, // threshold
+    1.15, // strength
+    0.7, // radius
+    0.72, // threshold
   );
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
@@ -286,9 +286,16 @@ function buildBody(def: CelestialBodyDef): BodyScene {
   let orbitLine: THREE.LineLoop | undefined;
 
   if (def.id === "sun") {
+    // The real Sun's surface is ~10⁶× brighter than a full-scale white
+    // reference, so we push the material into HDR (multiplier > 1). ACES
+    // tone mapping then rolls the core off to incandescent white with a
+    // warm limb, and the bloom pass picks it up as a true light source.
     mesh = new THREE.Mesh(
       new THREE.SphereGeometry(radius, 64, 48),
-      new THREE.MeshBasicMaterial({ map: T.sunTexture(), color: 0xffffff }),
+      new THREE.MeshBasicMaterial({
+        map: T.sunTexture(),
+        color: new THREE.Color(3.6, 3.1, 2.2),
+      }),
     );
     // Corona glow sprite
     const sprite = new THREE.Sprite(
@@ -299,7 +306,7 @@ function buildBody(def: CelestialBodyDef): BodyScene {
         depthWrite: false,
       }),
     );
-    sprite.scale.setScalar(radius * 6.5);
+    sprite.scale.setScalar(radius * 5.5);
     group.add(sprite);
   } else {
     const isGasGiant = ["jupiter", "saturn", "uranus", "neptune"].includes(
