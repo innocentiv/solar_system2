@@ -398,12 +398,12 @@ export function jupiterTexture(): THREE.CanvasTexture {
       b *= 1 + pm;
 
       // Great Red Spot: compact, sharp, with a pale collar. An oval
-      // elongated along the rotation direction (east-west ~2.5x its height).
+      // elongated along the rotation direction (east-west ~1.8x its height).
       let du = Math.abs(u - 0.7);
       if (du > 0.5) du = 1 - du;
-      const q = Math.sqrt((du / 0.02) ** 2 + ((v - 0.62) / 0.012) ** 2);
+      const q = Math.sqrt((du / 0.023) ** 2 + ((v - 0.62) / 0.025) ** 2);
       const core = 1 - smooth(0.6, 1.0, q);
-      const collar = smooth(0.72, 1.0, q) * (1 - smooth(1.15, 1.5, q));
+      const collar = smooth(0.7, 0.95, q) * (1 - smooth(1.25, 1.8, q));
       if (core > 0) {
         // Internal swirl so the spot reads as a rotating vortex, not a blob
         const swirl = fbmCyl(u, v, seed + 500, 4, 22, 0.5);
@@ -415,18 +415,18 @@ export function jupiterTexture(): THREE.CanvasTexture {
         b = b + (sb - b) * core;
       }
       if (collar > 0) {
-        r = r + (234 - r) * collar * 0.6;
-        g = g + (214 - g) * collar * 0.6;
-        b = b + (186 - b) * collar * 0.6;
+        r = r + (236 - r) * collar * 0.75;
+        g = g + (216 - g) * collar * 0.75;
+        b = b + (188 - b) * collar * 0.75;
       }
 
       // Small white oval storms in the south temperate zone
       // Wide in the rotation direction, narrow in latitude
       const ovals: [number, number, number, number][] = [
-        [0.35, 0.58, 0.02, 0.011],
-        [0.55, 0.665, 0.016, 0.009],
-        [0.15, 0.55, 0.018, 0.01],
-        [0.84, 0.575, 0.015, 0.0085],
+        [0.35, 0.58, 0.028, 0.0155],
+        [0.55, 0.665, 0.022, 0.012],
+        [0.15, 0.55, 0.025, 0.014],
+        [0.84, 0.575, 0.021, 0.0117],
       ];
       for (const [ou, ov, su, sv] of ovals) {
         let ouw = Math.abs(u - ou);
