@@ -66,6 +66,14 @@ export class UI {
       this.speedButtons.set(preset.id, btn);
       timeRow.appendChild(btn);
     }
+    const reverseBtn = el("button", "speed-btn reverse-btn", "⏪ Reverse");
+    reverseBtn.title = "Run time backwards (T)";
+    reverseBtn.addEventListener("click", () => sim.toggleTimeDirection());
+    timeRow.appendChild(reverseBtn);
+    sim.onTimeDirectionToggle = (reversed) => {
+      reverseBtn.textContent = reversed ? "⏩ Forward" : "⏪ Reverse";
+      reverseBtn.classList.toggle("active", reversed);
+    };
 
     const dateJump = el("div", "date-jump");
     const dateInput = el("input", "date-input");
@@ -118,7 +126,7 @@ export class UI {
       el(
         "span",
         undefined,
-        "bodies & orbits at true scale · drag to orbit · scroll to zoom · click a body to fly to it · Space pause · R reset",
+        "bodies & orbits at true scale · drag to orbit · scroll to zoom · click a body to fly to it · Space pause · T reverse time · R reset",
       ),
     );
     app.appendChild(hints);

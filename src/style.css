@@ -115,6 +115,15 @@ body {
   color: #fff;
 }
 
+.speed-btn.reverse-btn {
+  margin-left: 8px;
+  border-style: dashed;
+}
+
+.speed-btn.reverse-btn.active {
+  border-style: solid;
+}
+
 .date-jump {
   margin-top: 10px;
   display: flex;

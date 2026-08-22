@@ -16,7 +16,7 @@ export type SpeedPresetId =
   | "3mo"
   | "1y"
   | "5y"
-  | "50y";
+  | "10y";
 
 export const SPEED_PRESETS: {
   id: SpeedPresetId;
@@ -31,7 +31,7 @@ export const SPEED_PRESETS: {
   { id: "3mo", label: "3 months/s", daysPerSec: 91.3 },
   { id: "1y", label: "1 year/s", daysPerSec: 365.25 },
   { id: "5y", label: "5 years/s", daysPerSec: 1826.25 },
-  { id: "50y", label: "50 years/s", daysPerSec: 18262.5 },
+  { id: "10y", label: "10 years/s", daysPerSec: 3652.5 },
 ];
 
 const TWEEN_MS = 1600;
@@ -49,8 +49,9 @@ interface CameraTween {
 
 export class Simulation {
   private refs: SceneRefs;
-  private simDays = 0; // days since J2000
+  private simDays = daysSinceJ2000(Date.now()); // start at today's date
   private daysPerSec = 1; // default: 1 day per second
+  private timeReversed = false;
   private selectedId: string | null = null;
   private tween: CameraTween | null = null;
   private lastFrameMs = performance.now();
@@ -92,6 +93,14 @@ export class Simulation {
   setSpeed(id: SpeedPresetId): void {
     const p = SPEED_PRESETS.find((s) => s.id === id);
     this.daysPerSec = p ? p.daysPerSec : 0;
+    this.onSpeedToggle?.(); // the highlight must follow every selection
+  }
+
+  /** Flip the direction of simulated time. Returns the new state. */
+  toggleTimeDirection(): boolean {
+    this.timeReversed = !this.timeReversed;
+    this.onTimeDirectionToggle?.(this.timeReversed);
+    return this.timeReversed;
   }
 
   get currentDate(): Date {
@@ -161,7 +170,10 @@ export class Simulation {
     const dtSec = Math.min((nowMs - this.lastFrameMs) / 1000, 0.1); // clamp tab-switch spikes
     this.lastFrameMs = nowMs;
 
-    this.frameDeltaDays = this.daysPerSec * dtSec;
+    // The sign flips with the time direction, so orbital motion AND axial
+    // spin both run backwards when reversed.
+    this.frameDeltaDays =
+      this.daysPerSec * dtSec * (this.timeReversed ? -1 : 1);
     this.simDays += this.frameDeltaDays;
     this.updateBodies();
     this.updateMoonLabels();
@@ -370,6 +382,8 @@ export class Simulation {
       this.selectBody(null);
     } else if (ev.key === "r" || ev.key === "R") {
       this.resetView();
+    } else if (ev.key === "t" || ev.key === "T") {
+      this.toggleTimeDirection();
     }
   };
 
@@ -386,6 +400,7 @@ export class Simulation {
     this.onSpeedToggle?.();
   }
   onSpeedToggle?: () => void;
+  onTimeDirectionToggle?: (reversed: boolean) => void;
 
   resetView(): void {
     this.selectedId = null;
