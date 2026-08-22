@@ -481,13 +481,16 @@ export function glowSprite(): THREE.CanvasTexture {
   canvas.width = s;
   canvas.height = s;
   const ctx = getCtx(canvas);
+  // Sprite half-width is 1.7 sun-radii (scale 3.4r), so the disk limb sits
+  // at t ≈ 0.59. The corona must fade fast just outside that — in space the
+  // corona is a tight, faint, whitish halo, not a large orange glow (the
+  // orange in ground photos is atmospheric scattering).
   const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
-  g.addColorStop(0, "rgba(255, 244, 214, 1)");
-  g.addColorStop(0.14, "rgba(255, 214, 130, 0.9)");
-  g.addColorStop(0.3, "rgba(255, 170, 70, 0.45)");
-  g.addColorStop(0.55, "rgba(255, 130, 40, 0.14)");
-  g.addColorStop(0.8, "rgba(255, 110, 30, 0.04)");
-  g.addColorStop(1, "rgba(255, 100, 20, 0)");
+  g.addColorStop(0, "rgba(255, 250, 235, 0.9)");
+  g.addColorStop(0.59, "rgba(255, 250, 235, 0.5)");
+  g.addColorStop(0.7, "rgba(255, 240, 205, 0.2)");
+  g.addColorStop(0.85, "rgba(255, 225, 175, 0.05)");
+  g.addColorStop(1, "rgba(255, 215, 160, 0)");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, s, s);
   const tex = new THREE.CanvasTexture(canvas);

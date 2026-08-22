@@ -90,9 +90,9 @@ export function buildScene(container: HTMLElement): SceneRefs {
   composer.addPass(new RenderPass(scene, camera));
   const bloom = new UnrealBloomPass(
     new THREE.Vector2(container.clientWidth, container.clientHeight),
-    1.15, // strength
-    0.7, // radius
-    0.72, // threshold
+    0.5, // strength
+    0.4, // radius
+    0.88, // threshold
   );
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
@@ -306,7 +306,7 @@ function buildBody(def: CelestialBodyDef): BodyScene {
         depthWrite: false,
       }),
     );
-    sprite.scale.setScalar(radius * 5.5);
+    sprite.scale.setScalar(radius * 3.4);
     group.add(sprite);
   } else {
     const isGasGiant = ["jupiter", "saturn", "uranus", "neptune"].includes(
