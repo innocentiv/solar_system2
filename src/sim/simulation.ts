@@ -164,6 +164,7 @@ export class Simulation {
     this.frameDeltaDays = this.daysPerSec * dtSec;
     this.simDays += this.frameDeltaDays;
     this.updateBodies();
+    this.updateMoonLabels();
     this.updateCamera(nowMs);
 
     this.updateMarkers();
@@ -199,6 +200,25 @@ export class Simulation {
       }
 
       this.previousPositions.set(id, bs.group.position.clone());
+    }
+  }
+
+  /**
+   * Moon labels are only visible when the camera is near the parent
+   * planet — from system view they clump over the planet's own label.
+   * The threshold scales with each moon's orbit radius so its label
+   * appears once the moon is ~300+ px away from the parent's label on
+   * screen (well separated, not a single group).
+   */
+  private updateMoonLabels(): void {
+    const camPos = this.refs.camera.position;
+    for (const bs of this.refs.bodies.values()) {
+      if (bs.def.kind !== "moon" || bs.def.parent === null) continue;
+      const parent = this.refs.bodies.get(bs.def.parent);
+      if (!parent) continue;
+      const threshold =
+        (bs.def.elements?.a ?? 0.001) * AU_IN_SCENE_UNITS * 2.5;
+      bs.label.visible = camPos.distanceTo(parent.group.position) < threshold;
     }
   }
 
