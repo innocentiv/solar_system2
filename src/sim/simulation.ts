@@ -184,14 +184,15 @@ export class Simulation {
 
       // Axial spin (sign of rotationPeriodDays handles retrograde spin)
       const rotSpeed =
-        bs.def.rotationPeriodDays !== 0
-          ? (2 * Math.PI * dDays) / bs.def.rotationPeriodDays
-          : 0;
+        bs.def.rotationPeriodDays === 0
+          ? 0
+          : (2 * Math.PI * dDays) / bs.def.rotationPeriodDays;
       bs.mesh.rotation.y += rotSpeed;
       if (bs.cloudMesh) bs.cloudMesh.rotation.y += rotSpeed * 1.15;
 
-      // Follow mode: keep the selected body centered
-      if (this.selectedId === id) {
+      // Follow mode: keep the selected body centered. Skipped during a
+      // fly-to tween, which positions the camera absolutely each frame.
+      if (this.selectedId === id && !this.tween) {
         this.refs.camera.position.add(delta);
         this.refs.controls.target.add(delta);
       }
@@ -259,13 +260,16 @@ export class Simulation {
     const t = Math.min((nowMs - this.tween.startMs) / this.tween.durationMs, 1);
     const k = ease(t);
 
-    // For a selected body, re-anchor the destination to its live position
+    // For a selected body, re-anchor the destination to its live position.
+    // The camera must keep its offset RELATIVE TO THE BODY (toPos - toTarget),
+    // so a moving planet carries the destination along without changing the
+    // approach distance or angle.
     let toPos = this.tween.toPos;
     let toTarget = this.tween.toTarget;
     if (this.selectedId) {
       const bs = this.refs.bodies.get(this.selectedId);
       if (bs) {
-        const offset = this.tween.toTarget.clone().sub(this.tween.fromTarget);
+        const offset = this.tween.toPos.clone().sub(this.tween.toTarget);
         toTarget = bs.group.position;
         toPos = bs.group.position.clone().add(offset);
       }
