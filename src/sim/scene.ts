@@ -187,7 +187,7 @@ function makeAsteroidBelt(scene: THREE.Scene): AsteroidBelt {
   const colors = new Float32Array(N * 3);
   for (let i = 0; i < N; i++) {
     // Dark, near-neutral gray dust — must read as darker than the starfield
-    const b = 0.1 + Math.random() * 0.16;
+    const b = 0.16 + Math.random() * 0.22;
     colors[i * 3] = b * (1 + 0.05 * Math.random());
     colors[i * 3 + 1] = b;
     colors[i * 3 + 2] = b * (1 - 0.05 * Math.random());
@@ -203,9 +203,9 @@ function makeAsteroidBelt(scene: THREE.Scene): AsteroidBelt {
   // and sparse — and the whole ring dims as you zoom out.
   const beltMaterial = new THREE.ShaderMaterial({
     uniforms: {
-      uOpacity: { value: 0.6 },
+      uOpacity: { value: 0.9 },
       uNearDist: { value: 25 },
-      uMaxDist: { value: 550 },
+      uMaxDist: { value: 650 },
     },
     vertexShader: /* glsl */ `
       attribute vec3 aColor;
