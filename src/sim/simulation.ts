@@ -64,12 +64,14 @@ export class Simulation {
     }
     this.container.addEventListener("click", this.handlePointer);
     this.container.addEventListener("pointermove", this.handleHover);
+    this.container.addEventListener("pointerdown", this.handlePointerDown);
     window.addEventListener("keydown", this.handleKey);
   }
 
   dispose(): void {
     this.container.removeEventListener("click", this.handlePointer);
     this.container.removeEventListener("pointermove", this.handleHover);
+    this.container.removeEventListener("pointerdown", this.handlePointerDown);
     window.removeEventListener("keydown", this.handleKey);
   }
 
@@ -165,6 +167,8 @@ export class Simulation {
         this.refs.camera.position.add(delta);
         this.refs.controls.target.add(delta);
       }
+
+      this.previousPositions.set(id, bs.group.position.clone());
     }
   }
 
@@ -235,8 +239,19 @@ export class Simulation {
     return null;
   }
 
+  private downPos: { x: number; y: number } | null = null;
+
+  private handlePointerDown = (ev: PointerEvent): void => {
+    this.downPos = { x: ev.clientX, y: ev.clientY };
+  };
+
   private handlePointer = (ev: MouseEvent): void => {
-    // Ignore drags (orbit controls)
+    // Ignore clicks that were actually orbit drags
+    if (this.downPos) {
+      const dx = ev.clientX - this.downPos.x;
+      const dy = ev.clientY - this.downPos.y;
+      if (dx * dx + dy * dy > 25) return;
+    }
     const id = this.pickBody(ev);
     if (id) this.selectBody(id);
   };
