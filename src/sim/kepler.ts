@@ -91,21 +91,19 @@ export function heliocentricPosition(el: OrbitalElements, days: number): Eclipti
   const xp = a * (Math.cos(E) - e);
   const yp = a * Math.sqrt(1 - e * e) * Math.sin(E);
 
-  // Rotate: arg of perihelion -> inclination -> node
+  // Rotate to the ecliptic frame: R = Rz(-Ω) · Rx(-i) · Rz(-ω)
+  // Ecliptic convention: (x, y) in the plane, z out of plane.
   const cw = Math.cos(w), sw = Math.sin(w);
   const ci = Math.cos(inc), si = Math.sin(inc);
   const co = Math.cos(omega), so = Math.sin(omega);
 
-  const x1 = cw * xp - sw * yp;
-  const y1 = sw * xp + cw * yp;
-  const x2 = x1;
-  const y2 = ci * y1;
-  const z2 = si * y1;
+  const X1 = cw * xp - sw * yp;
+  const Y1 = sw * xp + cw * yp;
 
   return {
-    x: co * x2 - so * y2,
-    y: si * x2 + so * y2,
-    z: z2,
+    x: co * X1 + so * ci * Y1,
+    y: -so * X1 + co * ci * Y1,
+    z: -si * Y1,
   };
 }
 
@@ -130,16 +128,13 @@ export function orbitEllipsePoints(el: OrbitalElements, samples = 256): Ecliptic
     const xp = a * (Math.cos(E) - e);
     const yp = b * Math.sin(E);
 
-    const x1 = cw * xp - sw * yp;
-    const y1 = sw * xp + cw * yp;
-    const x2 = x1;
-    const y2 = ci * y1;
-    const z2 = si * y1;
+    const X1 = cw * xp - sw * yp;
+    const Y1 = sw * xp + cw * yp;
 
     pts.push({
-      x: co * x2 - so * y2,
-      y: si * x2 + so * y2,
-      z: z2,
+      x: co * X1 + so * ci * Y1,
+      y: -so * X1 + co * ci * Y1,
+      z: -si * Y1,
     });
   }
   return pts;
@@ -150,9 +145,12 @@ export function orbitalPeriodDays(aAU: number): number {
   return 365.25 * Math.sqrt(aAU * aAU * aAU);
 }
 
-/** Convert an ecliptic position (AU) to scene coordinates (Y-up, 1 AU = `au` units). */
+/**
+ * Convert an ecliptic position (AU) to scene coordinates.
+ * Ecliptic frame: (x, y) in the plane, z out of plane → scene: (x, z, -y) with Y up.
+ */
 export function toScene(p: EclipticPosition, au: number): { x: number; y: number; z: number } {
-  return { x: p.x * au, y: p.y * au, z: -p.z * au };
+  return { x: p.x * au, y: p.z * au, z: -p.y * au };
 }
 
 /** Heliocentric distance (AU) of a body at a given time — used for facts display. */
