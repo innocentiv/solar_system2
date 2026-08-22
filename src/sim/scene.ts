@@ -38,8 +38,6 @@ export interface BodyScene {
 export interface AsteroidBelt {
   /** Advance the belt to a simulation time (days since J2000) */
   update: (days: number) => void;
-  /** Density LOD: more dots rendered the closer the camera is to the Sun */
-  lod: (cameraDistance: number) => void;
 }
 
 export interface SceneRefs {
@@ -197,23 +195,51 @@ function makeAsteroidBelt(scene: THREE.Scene): AsteroidBelt {
 
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-  geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-  const points = new THREE.Points(
-    geo,
-    new THREE.PointsMaterial({
-      size: 1.4,
-      sizeAttenuation: false,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.5,
-      depthWrite: false,
-    }),
-  );
+  geo.setAttribute("aColor", new THREE.BufferAttribute(colors, 3));
+
+  // Per-particle fade: each asteroid's alpha is driven by its OWN distance
+  // to the camera (view-space depth), so when you look down the plane of
+  // the belt the near edge is bright and dense while the far edge is faint
+  // and sparse — and the whole ring dims as you zoom out.
+  const beltMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      uOpacity: { value: 0.6 },
+      uNearDist: { value: 25 },
+      uMaxDist: { value: 550 },
+    },
+    vertexShader: /* glsl */ `
+      attribute vec3 aColor;
+      uniform float uNearDist;
+      uniform float uMaxDist;
+      varying vec3 vColor;
+      varying float vAlpha;
+      void main() {
+        vColor = aColor;
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        float dist = -mvPosition.z;
+        float t = clamp((uMaxDist - dist) / (uMaxDist - uNearDist), 0.0, 1.0);
+        vAlpha = t * t;
+        gl_PointSize = 1.4;
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      uniform float uOpacity;
+      varying vec3 vColor;
+      varying float vAlpha;
+      void main() {
+        if (vAlpha < 0.02) discard;
+        gl_FragColor = vec4(vColor, vAlpha * uOpacity);
+      }
+    `,
+    transparent: true,
+    depthWrite: false,
+  });
+  const points = new THREE.Points(geo, beltMaterial);
   points.frustumCulled = false;
   scene.add(points);
 
   const posAttr = geo.getAttribute("position") as THREE.BufferAttribute;
-  let lastCount = -1;
 
   return {
     update(days: number): void {
@@ -238,16 +264,6 @@ function makeAsteroidBelt(scene: THREE.Scene): AsteroidBelt {
         positions[i * 3 + 2] = -y1 * ci;
       }
       posAttr.needsUpdate = true;
-    },
-    lod(cameraDistance: number): void {
-      // Far: sparse (clustered dots would read as a bright band). Near:
-      // full density, so the belt resolves into individual asteroids.
-      const count =
-        cameraDistance > 250 ? 2200 : cameraDistance > 80 ? 4800 : N;
-      if (count !== lastCount) {
-        lastCount = count;
-        geo.setDrawRange(0, count);
-      }
     },
   };
 }
