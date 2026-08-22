@@ -156,7 +156,8 @@ function makeAsteroidBelt(scene: THREE.Scene): AsteroidBelt {
   const period = new Float32Array(N); // days
 
   // Mean of 3 uniforms → centered, triangular-ish distribution
-  const spread = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
+  const spread = () =>
+    (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
   const gaps = [2.5, 2.82, 2.95];
 
   let placed = 0;

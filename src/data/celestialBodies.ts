@@ -122,39 +122,6 @@ const planets: CelestialBodyDef[] = [
     },
   },
   {
-    id: "moon",
-    name: "Moon",
-    kind: "moon",
-    parent: "earth",
-    radiusKm: 1737.4,
-    elements: {
-      // Mean elements for the Moon's orbit about Earth (approximate)
-      a: 0.00257,
-      e: 0.0549,
-      i: 5.145,
-      L: 215.315,
-      varpi: 318.15,
-      Omega: 125.08,
-      rates: { da: 0, dL: 390620.1, dvarpi: 4069.0, dOmega: -200.7 },
-    },
-    rotationPeriodDays: 27.3217, // tidally locked
-    axialTiltDeg: 6.68,
-    facts: {
-      diameterKm: 3474.8,
-      massKg: "7.346 × 10²² kg",
-      orbitalPeriod: "27.32 days (sidereal)",
-      dayLength: "29.5 Earth days (synchronous rotation)",
-      distanceFromSun: "~1 AU (orbits Earth)",
-      temperature: "-173 to 127 °C",
-      moons: 0,
-      axialTiltDeg: 6.68,
-      description:
-        "Earth's only natural satellite, formed ~4.5 billion years ago in a giant impact. It is " +
-        "tidally locked, always showing the same face to Earth. Its gravity drives the ocean tides " +
-        "and stabilizes Earth's axial tilt.",
-    },
-  },
-  {
     id: "venus",
     name: "Venus",
     kind: "planet",
@@ -226,6 +193,39 @@ const planets: CelestialBodyDef[] = [
         "The only known world with life. Liquid-water oceans cover 71% of the surface, and an " +
         "oxygen-rich atmosphere — a product of billions of years of biology — shields the " +
         "surface from harmful ultraviolet radiation.",
+    },
+  },
+  {
+    id: "moon",
+    name: "Moon",
+    kind: "moon",
+    parent: "earth",
+    radiusKm: 1737.4,
+    elements: {
+      // Mean elements for the Moon's orbit about Earth (approximate)
+      a: 0.00257,
+      e: 0.0549,
+      i: 5.145,
+      L: 215.315,
+      varpi: 318.15,
+      Omega: 125.08,
+      rates: { da: 0, dL: 390620.1, dvarpi: 4069.0, dOmega: -200.7 },
+    },
+    rotationPeriodDays: 27.3217, // tidally locked
+    axialTiltDeg: 6.68,
+    facts: {
+      diameterKm: 3474.8,
+      massKg: "7.346 × 10²² kg",
+      orbitalPeriod: "27.32 days (sidereal)",
+      dayLength: "29.5 Earth days (synchronous rotation)",
+      distanceFromSun: "~1 AU (orbits Earth)",
+      temperature: "-173 to 127 °C",
+      moons: 0,
+      axialTiltDeg: 6.68,
+      description:
+        "Earth's only natural satellite, formed ~4.5 billion years ago in a giant impact. It is " +
+        "tidally locked, always showing the same face to Earth. Its gravity drives the ocean tides " +
+        "and stabilizes Earth's axial tilt.",
     },
   },
   {
@@ -577,7 +577,7 @@ const planets: CelestialBodyDef[] = [
       L: 250,
       varpi: 250,
       Omega: 0,
-      rates: { da: 0, dL: 2.910e6, dvarpi: 0, dOmega: 0 },
+      rates: { da: 0, dL: 2.91e6, dvarpi: 0, dOmega: 0 },
     },
     rotationPeriodDays: 4.5182, // tidally locked
     axialTiltDeg: 0,
@@ -646,7 +646,7 @@ const planets: CelestialBodyDef[] = [
       L: 80,
       varpi: 80,
       Omega: 0,
-      rates: { da: 0, dL: 1.510e6, dvarpi: 0, dOmega: 0 },
+      rates: { da: 0, dL: 1.51e6, dvarpi: 0, dOmega: 0 },
     },
     rotationPeriodDays: 8.7061, // tidally locked
     axialTiltDeg: 0,
