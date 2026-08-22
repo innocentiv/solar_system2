@@ -16,21 +16,35 @@ import {
 
 let failures = 0;
 
-function check(name: string, actual: number, expected: number, tol: number): void {
+function check(
+  name: string,
+  actual: number,
+  expected: number,
+  tol: number,
+): void {
   const ok = Math.abs(actual - expected) <= tol;
   if (!ok) failures++;
-  console.log(`${ok ? "PASS" : "FAIL"}  ${name}: got ${actual.toFixed(6)}, expected ${expected} ± ${tol}`);
+  console.log(
+    `${ok ? "PASS" : "FAIL"}  ${name}: got ${actual.toFixed(6)}, expected ${expected} ± ${tol}`,
+  );
 }
 
 // --- Kepler equation solver -------------------------------------------------
 {
-  const e = 0.2, M = 1.0;
+  const e = 0.2,
+    M = 1.0;
   const E = solveKepler(M, e);
   check("kepler.residual(e=0.2, M=1.0)", E - e * Math.sin(E) - M, 0, 1e-12);
 
-  const e2 = 0.09341, M2 = -0.5;
+  const e2 = 0.09341,
+    M2 = -0.5;
   const E2 = solveKepler(M2, e2);
-  check("kepler.residual(e=0.093, M=-0.5)", E2 - e2 * Math.sin(E2) - M2, 0, 1e-12);
+  check(
+    "kepler.residual(e=0.093, M=-0.5)",
+    E2 - e2 * Math.sin(E2) - M2,
+    0,
+    1e-12,
+  );
 }
 
 // --- Earth at J2000 ---------------------------------------------------------
@@ -39,7 +53,12 @@ function check(name: string, actual: number, expected: number, tol: number): voi
 {
   const earth = getBody("earth").elements!;
   check("j2000.epoch.days", daysSinceJ2000(Date.UTC(2000, 0, 1, 12)), 0, 1e-9);
-  check("earth.j2000.distance_AU", heliocentricDistance(earth, 0), 0.9833, 0.002);
+  check(
+    "earth.j2000.distance_AU",
+    heliocentricDistance(earth, 0),
+    0.9833,
+    0.002,
+  );
 
   const p = heliocentricPosition(earth, 0);
   // Ecliptic frame: (x, y) in-plane → longitude = atan2(y, x)
@@ -69,12 +88,23 @@ function check(name: string, actual: number, expected: number, tol: number): voi
 // --- Kepler's third law for all planets --------------------------------------
 {
   const expected: Record<string, number> = {
-    mercury: 87.97, venus: 224.7, earth: 365.25, mars: 686.98,
-    jupiter: 4332.6, saturn: 10759, uranus: 30687, neptune: 60190,
+    mercury: 87.97,
+    venus: 224.7,
+    earth: 365.25,
+    mars: 686.98,
+    jupiter: 4332.6,
+    saturn: 10759,
+    uranus: 30687,
+    neptune: 60190,
   };
   for (const id of Object.keys(expected)) {
     const el = getBody(id).elements!;
-    check(`period.${id}_days`, orbitalPeriodDays(el.a), expected[id], expected[id] * 0.01);
+    check(
+      `period.${id}_days`,
+      orbitalPeriodDays(el.a),
+      expected[id],
+      expected[id] * 0.01,
+    );
   }
 }
 
@@ -85,9 +115,13 @@ function check(name: string, actual: number, expected: number, tol: number): voi
     const p = heliocentricPosition(b.elements, 0);
     const r = Math.hypot(p.x, p.y, p.z);
     const a = b.elements.a;
-    const ok = r >= a * (1 - b.elements.e) * 0.999 && r <= a * (1 + b.elements.e) * 1.001;
+    const ok =
+      r >= a * (1 - b.elements.e) * 0.999 &&
+      r <= a * (1 + b.elements.e) * 1.001;
     if (!ok) failures++;
-    console.log(`${ok ? "PASS" : "FAIL"}  range.${b.id}: r=${r.toFixed(4)} AU within [a(1-e), a(1+e)]`);
+    console.log(
+      `${ok ? "PASS" : "FAIL"}  range.${b.id}: r=${r.toFixed(4)} AU within [a(1-e), a(1+e)]`,
+    );
   }
 }
 
@@ -99,5 +133,7 @@ function check(name: string, actual: number, expected: number, tol: number): voi
   check("neptune.year500.distance_AU", r, 30.07, 0.6); // a drifts by ~0.00026 AU/century
 }
 
-console.log(failures === 0 ? "\nALL TESTS PASSED" : `\n${failures} TEST(S) FAILED`);
+console.log(
+  failures === 0 ? "\nALL TESTS PASSED" : `\n${failures} TEST(S) FAILED`,
+);
 process.exit(failures === 0 ? 0 : 1);

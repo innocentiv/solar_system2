@@ -2,7 +2,11 @@
  * DOM UI: time controls, body navigator, info panel, hints.
  */
 import { BODIES, type CelestialBodyDef } from "../data/celestialBodies";
-import { SPEED_PRESETS, type Simulation, type SpeedPresetId } from "../sim/simulation";
+import {
+  SPEED_PRESETS,
+  type Simulation,
+  type SpeedPresetId,
+} from "../sim/simulation";
 
 const SWATCH: Record<string, string> = {
   sun: "#ffc94d",
@@ -68,7 +72,13 @@ export class UI {
 
     const header = el("div", "panel header-panel");
     header.appendChild(el("h1", "title", "Solar System"));
-    header.appendChild(el("div", "subtitle", "Scientific 3D simulation · JPL J2000 orbital elements"));
+    header.appendChild(
+      el(
+        "div",
+        "subtitle",
+        "True-scale 3D simulation · JPL J2000 orbital elements",
+      ),
+    );
     header.appendChild(this.dateEl);
     header.appendChild(timeRow);
     header.appendChild(dateJump);
@@ -95,28 +105,40 @@ export class UI {
 
     const hints = el("div", "hints");
     hints.appendChild(
-      el("span", undefined, "drag to orbit · scroll to zoom · click a body to fly to it · Space pause · R reset"),
+      el(
+        "span",
+        undefined,
+        "bodies & orbits at true scale · drag to orbit · scroll to zoom · click a body to fly to it · Space pause · R reset",
+      ),
     );
     app.appendChild(hints);
 
     sim.onDateChange = (d) => {
       this.dateEl.textContent = this.formatDate(d);
-      if (document.activeElement !== dateInput) dateInput.value = this.isoDate(d);
+      if (document.activeElement !== dateInput)
+        dateInput.value = this.isoDate(d);
     };
-    sim.onBodySelected = (id) => this.showInfo(id ? BODIES.find((b) => b.id === id)! : null);
+    sim.onBodySelected = (id) =>
+      this.showInfo(id ? BODIES.find((b) => b.id === id)! : null);
     sim.onSpeedToggle = () => this.syncSpeed();
     this.syncSpeed();
   }
 
   private formatDate(d: Date): string {
-    return d.toLocaleDateString("en-US", {
-      timeZone: "UTC",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    }) +
+    return (
+      d.toLocaleDateString("en-US", {
+        timeZone: "UTC",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }) +
       " " +
-      d.toLocaleTimeString("en-US", { timeZone: "UTC", hour: "2-digit", minute: "2-digit" });
+      d.toLocaleTimeString("en-US", {
+        timeZone: "UTC",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    );
   }
 
   private isoDate(d: Date): string {
@@ -132,7 +154,8 @@ export class UI {
   private showInfo(def: CelestialBodyDef | null): void {
     if (!def) {
       this.infoPanel.classList.add("hidden");
-      for (const btn of this.navButtons.values()) btn.classList.remove("active");
+      for (const btn of this.navButtons.values())
+        btn.classList.remove("active");
       return;
     }
     this.infoPanel.classList.remove("hidden");
@@ -166,6 +189,7 @@ export class UI {
     this.infoPanel.appendChild(table);
     this.infoPanel.appendChild(el("p", "info-desc", f.description));
 
-    for (const [id, btn] of this.navButtons) btn.classList.toggle("active", id === def.id);
+    for (const [id, btn] of this.navButtons)
+      btn.classList.toggle("active", id === def.id);
   }
 }

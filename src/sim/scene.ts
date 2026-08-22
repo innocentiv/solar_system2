@@ -8,14 +8,24 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
-import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+import {
+  CSS2DRenderer,
+  CSS2DObject,
+} from "three/addons/renderers/CSS2DRenderer.js";
 
-import { AU_IN_SCENE_UNITS, BODIES, type CelestialBodyDef } from "../data/celestialBodies";
+import {
+  AU_IN_SCENE_UNITS,
+  BODIES,
+  KM_TO_SCENE_UNITS,
+  type CelestialBodyDef,
+} from "../data/celestialBodies";
 import { orbitEllipsePoints, toScene } from "./kepler";
 import * as T from "./textures";
 
 export interface BodyScene {
   def: CelestialBodyDef;
+  /** True-scale radius in scene units */
+  radius: number;
   /** Pivot at the body's orbital position; the mesh spins inside it */
   group: THREE.Group;
   mesh: THREE.Mesh;
@@ -33,6 +43,8 @@ export interface SceneRefs {
   camera: THREE.PerspectiveCamera;
   scene: THREE.Scene;
   bodies: Map<string, BodyScene>;
+  /** Screen-fixed-size marker dots so true-scale (sub-pixel) bodies stay visible and pickable */
+  markers: THREE.Points;
 }
 
 export function buildScene(container: HTMLElement): SceneRefs {
@@ -42,12 +54,18 @@ export function buildScene(container: HTMLElement): SceneRefs {
   const camera = new THREE.PerspectiveCamera(
     50,
     container.clientWidth / container.clientHeight,
-    0.1,
+    0.0001,
     60000,
   );
   camera.position.set(-140, 95, 210);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+  const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    powerPreference: "high-performance",
+    // True scale spans ~11 orders of magnitude (Earth radius vs. Neptune
+    // orbit) — logarithmic depth is required to avoid z-fighting.
+    logarithmicDepthBuffer: true,
+  });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -64,7 +82,7 @@ export function buildScene(container: HTMLElement): SceneRefs {
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.06;
-  controls.minDistance = 4;
+  controls.minDistance = 0.0004;
   controls.maxDistance = 9000;
 
   // --- Post-processing: bloom for the Sun --------------------------------
@@ -94,14 +112,84 @@ export function buildScene(container: HTMLElement): SceneRefs {
     bodies.set(def.id, bs);
     scene.add(bs.group);
     if (def.parent === null && bs.orbitLine) scene.add(bs.orbitLine);
+    // Moon orbit line follows Earth: re-parent to Earth's group
+    if (def.parent !== null && bs.orbitLine) {
+      const parent = bodies.get(def.parent)!;
+      parent.group.add(bs.orbitLine);
+    }
   }
 
-  return { renderer, labelRenderer, composer, controls, camera, scene, bodies };
+  return {
+    renderer,
+    labelRenderer,
+    composer,
+    controls,
+    camera,
+    scene,
+    bodies,
+    markers: buildMarkers(bodies, scene),
+  };
+}
+
+const MARKER_COLORS: Record<string, string> = {
+  sun: "#ffc94d",
+  mercury: "#b8b0aa",
+  venus: "#e8c98a",
+  earth: "#6fb3ff",
+  mars: "#ff8a66",
+  jupiter: "#e0b58c",
+  saturn: "#e8d8ae",
+  uranus: "#9ad4e0",
+  neptune: "#6f8cff",
+  moon: "#c8c8d0",
+};
+
+/**
+ * One screen-fixed-size dot per body (additive blending → a black vertex
+ * color makes a dot invisible, which is how the selected body's own dot is
+ * hidden once you are close enough to see its sphere).
+ */
+function buildMarkers(
+  bodies: Map<string, BodyScene>,
+  scene: THREE.Scene,
+): THREE.Points {
+  const ids = [...bodies.keys()];
+  const positions = new Float32Array(ids.length * 3);
+  const colors = new Float32Array(ids.length * 3);
+  const color = new THREE.Color();
+  ids.forEach((id, i) => {
+    color.set(MARKER_COLORS[id] ?? "#ffffff");
+    colors[i * 3] = color.r;
+    colors[i * 3 + 1] = color.g;
+    colors[i * 3 + 2] = color.b;
+  });
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  const points = new THREE.Points(
+    geo,
+    new THREE.PointsMaterial({
+      size: 4,
+      sizeAttenuation: false,
+      vertexColors: true,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      depthTest: false,
+    }),
+  );
+  points.frustumCulled = false;
+  scene.add(points);
+  return points;
 }
 
 function makeStarfield(): THREE.Group {
   const group = new THREE.Group();
-  const layers: { count: number; size: number; tint: [number, number, number] }[] = [
+  const layers: {
+    count: number;
+    size: number;
+    tint: [number, number, number];
+  }[] = [
     { count: 9000, size: 1.6, tint: [1, 1, 1] },
     { count: 4500, size: 2.6, tint: [0.75, 0.85, 1] },
     { count: 3000, size: 3.4, tint: [1, 0.9, 0.75] },
@@ -190,7 +278,7 @@ function makeLabel(text: string): CSS2DObject {
 
 function buildBody(def: CelestialBodyDef): BodyScene {
   const group = new THREE.Group();
-  const radius = def.displayRadius;
+  const radius = (def.facts.diameterKm / 2) * KM_TO_SCENE_UNITS;
 
   let mesh: THREE.Mesh;
   let cloudMesh: THREE.Mesh | undefined;
@@ -214,17 +302,26 @@ function buildBody(def: CelestialBodyDef): BodyScene {
     sprite.scale.setScalar(radius * 6.5);
     group.add(sprite);
   } else {
-    const isGasGiant = ["jupiter", "saturn", "uranus", "neptune"].includes(def.id);
+    const isGasGiant = ["jupiter", "saturn", "uranus", "neptune"].includes(
+      def.id,
+    );
     const segments = isGasGiant ? 64 : 48;
     const texture =
-      def.id === "mercury" ? T.mercuryTexture()
-      : def.id === "venus" ? T.venusTexture()
-      : def.id === "mars" ? T.marsTexture()
-      : def.id === "jupiter" ? T.jupiterTexture()
-      : def.id === "saturn" ? T.saturnTexture()
-      : def.id === "uranus" ? T.uranusTexture()
-      : def.id === "neptune" ? T.neptuneTexture()
-      : T.moonTexture();
+      def.id === "mercury"
+        ? T.mercuryTexture()
+        : def.id === "venus"
+          ? T.venusTexture()
+          : def.id === "mars"
+            ? T.marsTexture()
+            : def.id === "jupiter"
+              ? T.jupiterTexture()
+              : def.id === "saturn"
+                ? T.saturnTexture()
+                : def.id === "uranus"
+                  ? T.uranusTexture()
+                  : def.id === "neptune"
+                    ? T.neptuneTexture()
+                    : T.moonTexture();
 
     // Earth: Phong material for a sun-glint on the oceans, plus a
     // separate drifting cloud layer.
@@ -251,7 +348,11 @@ function buildBody(def: CelestialBodyDef): BodyScene {
     } else {
       mesh = new THREE.Mesh(
         new THREE.SphereGeometry(radius, segments, segments / 2),
-        new THREE.MeshStandardMaterial({ map: texture, roughness: 0.92, metalness: 0.0 }),
+        new THREE.MeshStandardMaterial({
+          map: texture,
+          roughness: 0.92,
+          metalness: 0.0,
+        }),
       );
     }
 
@@ -305,23 +406,26 @@ function buildBody(def: CelestialBodyDef): BodyScene {
         });
         orbitLine = new THREE.LineLoop(
           new THREE.BufferGeometry().setFromPoints(pts),
-          new THREE.LineBasicMaterial({ color: 0x3a5f8a, transparent: true, opacity: 0.35 }),
+          new THREE.LineBasicMaterial({
+            color: 0x3a5f8a,
+            transparent: true,
+            opacity: 0.35,
+          }),
         );
       } else if (def.parent === "earth") {
-        // Moon orbit: circle of radius displaySemiMajorAxis, inclined 5.145°
-        const a = def.displaySemiMajorAxis ?? 8.5;
-        const pts: THREE.Vector3[] = [];
-        const inc = THREE.MathUtils.degToRad(5.145);
-        for (let s = 0; s <= 256; s++) {
-          const t = (s / 256) * Math.PI * 2;
-          const x = a * Math.cos(t);
-          const z = a * Math.sin(t) * Math.cos(inc);
-          const y = a * Math.sin(t) * Math.sin(inc);
-          pts.push(new THREE.Vector3(x, y, z));
-        }
+        // Moon orbit: its true elliptical elements, at true scale, in
+        // Earth-centered coordinates (re-parented to Earth's group above)
+        const pts = orbitEllipsePoints(def.elements).map((p) => {
+          const s = toScene(p, AU_IN_SCENE_UNITS);
+          return new THREE.Vector3(s.x, s.y, s.z);
+        });
         orbitLine = new THREE.LineLoop(
           new THREE.BufferGeometry().setFromPoints(pts),
-          new THREE.LineBasicMaterial({ color: 0x555f70, transparent: true, opacity: 0.3 }),
+          new THREE.LineBasicMaterial({
+            color: 0x555f70,
+            transparent: true,
+            opacity: 0.3,
+          }),
         );
         group.add(orbitLine);
       }
@@ -329,9 +433,8 @@ function buildBody(def: CelestialBodyDef): BodyScene {
   }
 
   const label = makeLabel(def.name);
-  label.position.set(0, radius * 1.55 + 1.2, 0);
+  label.position.set(0, radius * 2.5, 0);
   group.add(label);
 
-  return { def, group, mesh, label, cloudMesh, ringMesh, orbitLine };
+  return { def, group, mesh, label, cloudMesh, ringMesh, orbitLine, radius };
 }
-

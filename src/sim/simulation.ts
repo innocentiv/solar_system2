@@ -18,7 +18,11 @@ export type SpeedPresetId =
   | "5y"
   | "50y";
 
-export const SPEED_PRESETS: { id: SpeedPresetId; label: string; daysPerSec: number }[] = [
+export const SPEED_PRESETS: {
+  id: SpeedPresetId;
+  label: string;
+  daysPerSec: number;
+}[] = [
   { id: "paused", label: "⏸ Paused", daysPerSec: 0 },
   { id: "1h", label: "1 hour/s", daysPerSec: 1 / 24 },
   { id: "1d", label: "1 day/s", daysPerSec: 1 },
@@ -31,7 +35,8 @@ export const SPEED_PRESETS: { id: SpeedPresetId; label: string; daysPerSec: numb
 ];
 
 const TWEEN_MS = 1600;
-const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
+const ease = (t: number) =>
+  t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
 
 interface CameraTween {
   fromPos: THREE.Vector3;
@@ -49,12 +54,14 @@ export class Simulation {
   private selectedId: string | null = null;
   private tween: CameraTween | null = null;
   private lastFrameMs = performance.now();
-  private raycaster = new THREE.Raycaster();
   private previousPositions = new Map<string, THREE.Vector3>();
   onDateChange?: (date: Date) => void;
   onBodySelected?: (id: string | null) => void;
 
-  constructor(private container: HTMLElement, refs: SceneRefs) {
+  constructor(
+    private container: HTMLElement,
+    refs: SceneRefs,
+  ) {
     this.refs = refs;
     // Prime positions before the first frame
     const days = this.simDays;
@@ -106,7 +113,9 @@ export class Simulation {
     }
     const bs = this.refs.bodies.get(id)!;
     const target = bs.group.position.clone();
-    const dist = bs.def.displayRadius * 6 + 6;
+    // True scale: approach at ~9 body radii
+    const dist = Math.max(bs.radius * 9, 0.001);
+    this.refs.controls.minDistance = Math.max(0.0002, dist * 0.02);
 
     // Approach from a direction that keeps the Sun mostly behind the camera
     const dir = this.refs.camera.position.clone().sub(target);
@@ -141,6 +150,7 @@ export class Simulation {
     this.updateBodies();
     this.updateCamera(nowMs);
 
+    this.updateMarkers();
     this.refs.controls.update();
     this.refs.composer.render();
     this.refs.labelRenderer.render(this.refs.scene, this.refs.camera);
@@ -158,7 +168,9 @@ export class Simulation {
 
       // Axial spin (sign of rotationPeriodDays handles retrograde spin)
       const rotSpeed =
-        bs.def.rotationPeriodDays !== 0 ? (2 * Math.PI * dDays) / bs.def.rotationPeriodDays : 0;
+        bs.def.rotationPeriodDays !== 0
+          ? (2 * Math.PI * dDays) / bs.def.rotationPeriodDays
+          : 0;
       bs.mesh.rotation.y += rotSpeed;
       if (bs.cloudMesh) bs.cloudMesh.rotation.y += rotSpeed * 1.15;
 
@@ -180,21 +192,36 @@ export class Simulation {
       bs.group.position.set(0, 0, 0);
       return;
     }
+    // True scale: positions come out of the orbital elements in AU.
+    // For a moon the elements are parent-centered (geocentric for the Moon),
+    // so we add the parent's position after converting to scene units.
     const pos = heliocentricPosition(def.elements, days);
+    const s = toScene(pos, AU_IN_SCENE_UNITS);
     if (def.parent === null) {
-      const s = toScene(pos, AU_IN_SCENE_UNITS);
       bs.group.position.set(s.x, s.y, s.z);
     } else {
-      // Moon: geocentric position scaled so a = displaySemiMajorAxis
       const parent = this.refs.bodies.get(def.parent)!;
-      const scale = (def.displaySemiMajorAxis ?? 8.5) / def.elements.a;
-      const s = toScene(pos, AU_IN_SCENE_UNITS * scale);
       bs.group.position.set(
         parent.group.position.x + s.x,
         parent.group.position.y + s.y,
         parent.group.position.z + s.z,
       );
     }
+  }
+
+  /** Keep the marker dots on their bodies; hide the selected body's dot (black + additive = invisible). */
+  private updateMarkers(): void {
+    const posAttr = this.refs.markers.geometry.getAttribute("position") as THREE.BufferAttribute;
+    const colAttr = this.refs.markers.geometry.getAttribute("color") as THREE.BufferAttribute;
+    let i = 0;
+    for (const [id, bs] of this.refs.bodies) {
+      posAttr.setXYZ(i, bs.group.position.x, bs.group.position.y, bs.group.position.z);
+      const black = id === this.selectedId;
+      colAttr.setXYZ(i, black ? 0 : colAttr.getX(i), black ? 0 : colAttr.getY(i), black ? 0 : colAttr.getZ(i));
+      i++;
+    }
+    posAttr.needsUpdate = true;
+    colAttr.needsUpdate = true;
   }
 
   private updateCamera(nowMs: number): void {
@@ -222,21 +249,37 @@ export class Simulation {
 
   // --- Input ----------------------------------------------------------------
 
-  private pointer = new THREE.Vector2();
+  /**
+   * Screen-space picking: true-scale spheres are often sub-pixel, so a
+   * raycast against them is unreliable. Instead, project every body to the
+   * screen and pick the one closest to the pointer (within 24 px), breaking
+   * ties by camera distance.
+   */
+  private projected = new THREE.Vector3();
 
   private pickBody(ev: MouseEvent): string | null {
     const rect = this.container.getBoundingClientRect();
-    this.pointer.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
-    this.pointer.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
-    this.raycaster.setFromCamera(this.pointer, this.refs.camera);
-    const meshes = [...this.refs.bodies.values()].map((b) => b.mesh);
-    const hits = this.raycaster.intersectObjects(meshes, false);
-    if (hits.length === 0) return null;
-    const hit = hits[0].object;
-    for (const [id, b] of this.refs.bodies) {
-      if (b.mesh === hit) return id;
+    const mouseX = ev.clientX - rect.left;
+    const mouseY = ev.clientY - rect.top;
+    const height = rect.height;
+
+    let bestId: string | null = null;
+    let bestPx = 24;
+    let bestDist = Infinity;
+    for (const [id, bs] of this.refs.bodies) {
+      this.projected.copy(bs.group.position).project(this.refs.camera);
+      if (this.projected.z > 1) continue; // behind the camera
+      const px = (this.projected.x * 0.5 + 0.5) * rect.width;
+      const py = (-this.projected.y * 0.5 + 0.5) * height;
+      const d = Math.hypot(px - mouseX, py - mouseY);
+      const camDist = this.refs.camera.position.distanceTo(bs.group.position);
+      if (d < bestPx || (d === bestPx && camDist < bestDist)) {
+        bestPx = d;
+        bestDist = camDist;
+        bestId = id;
+      }
     }
-    return null;
+    return bestId;
   }
 
   private downPos: { x: number; y: number } | null = null;
@@ -262,7 +305,11 @@ export class Simulation {
   };
 
   private handleKey = (ev: KeyboardEvent): void => {
-    if (ev.target instanceof HTMLInputElement || ev.target instanceof HTMLSelectElement) return;
+    if (
+      ev.target instanceof HTMLInputElement ||
+      ev.target instanceof HTMLSelectElement
+    )
+      return;
     if (ev.code === "Space") {
       ev.preventDefault();
       this.selectSpeedToggle();
@@ -300,4 +347,3 @@ export class Simulation {
     };
   }
 }
-

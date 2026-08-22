@@ -15,7 +15,11 @@ const H = 512;
 // ---------------------------------------------------------------------------
 
 function hash3(x: number, y: number, z: number, seed: number): number {
-  let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(z, 1274126177) ^ Math.imul(seed, 974634211);
+  let h =
+    Math.imul(x, 374761393) ^
+    Math.imul(y, 668265263) ^
+    Math.imul(z, 1274126177) ^
+    Math.imul(seed, 974634211);
   h = Math.imul(h ^ (h >>> 13), 1103515245);
   h ^= h >>> 16;
   return (h >>> 0) / 4294967296;
@@ -24,8 +28,12 @@ function hash3(x: number, y: number, z: number, seed: number): number {
 const fade = (t: number) => t * t * (3 - 2 * t);
 
 function valueNoise3(x: number, y: number, z: number, seed: number): number {
-  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
-  const xf = fade(x - xi), yf = fade(y - yi), zf = fade(z - zi);
+  const xi = Math.floor(x),
+    yi = Math.floor(y),
+    zi = Math.floor(z);
+  const xf = fade(x - xi),
+    yf = fade(y - yi),
+    zf = fade(z - zi);
 
   const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -46,7 +54,14 @@ function valueNoise3(x: number, y: number, z: number, seed: number): number {
 }
 
 /** Fractal Brownian motion on a cylinder: seamless in u, periodic-ish in v via the z axis. */
-function fbmCyl(u: number, v: number, seed: number, octaves = 5, freq = 3, gain = 0.55): number {
+function fbmCyl(
+  u: number,
+  v: number,
+  seed: number,
+  octaves = 5,
+  freq = 3,
+  gain = 0.55,
+): number {
   const theta = u * Math.PI * 2;
   const cx = Math.cos(theta);
   const cy = Math.sin(theta);
@@ -55,7 +70,9 @@ function fbmCyl(u: number, v: number, seed: number, octaves = 5, freq = 3, gain 
   let norm = 0;
   let f = freq;
   for (let o = 0; o < octaves; o++) {
-    sum += amp * valueNoise3(cx * f + 7.3, cy * f + 3.1, v * f + 11.7, seed + o * 101);
+    sum +=
+      amp *
+      valueNoise3(cx * f + 7.3, cy * f + 3.1, v * f + 11.7, seed + o * 101);
     norm += amp;
     amp *= gain;
     f *= 2;
@@ -69,7 +86,11 @@ const smooth = (a: number, b: number, x: number) => {
   return t * t * (3 - 2 * t);
 };
 
-type PixelFn = (u: number, v: number, seed: number) => [number, number, number, number?];
+type PixelFn = (
+  u: number,
+  v: number,
+  seed: number,
+) => [number, number, number, number?];
 
 function getCtx(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
   const ctx = canvas.getContext("2d");
@@ -77,7 +98,12 @@ function getCtx(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
   return ctx;
 }
 
-function renderTexture(name: string, fn: PixelFn, seed: number, srgb = true): THREE.CanvasTexture {
+function renderTexture(
+  name: string,
+  fn: PixelFn,
+  seed: number,
+  srgb = true,
+): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
@@ -130,11 +156,21 @@ function craterize(
   }
 }
 
-function withCraters(name: string, fn: PixelFn, seed: number, craters: number): THREE.CanvasTexture {
+function withCraters(
+  name: string,
+  fn: PixelFn,
+  seed: number,
+  craters: number,
+): THREE.CanvasTexture {
   const tex = renderTexture(name, fn, seed);
   const canvas = tex.image as HTMLCanvasElement;
   const ctx = getCtx(canvas);
-  craterize(ctx.getImageData(0, 0, canvas.width, canvas.height), ctx, craters, seed);
+  craterize(
+    ctx.getImageData(0, 0, canvas.width, canvas.height),
+    ctx,
+    craters,
+    seed,
+  );
   tex.needsUpdate = true;
   return tex;
 }
@@ -144,187 +180,255 @@ function withCraters(name: string, fn: PixelFn, seed: number, craters: number): 
 // ---------------------------------------------------------------------------
 
 export function sunTexture(): THREE.CanvasTexture {
-  return renderTexture("sun", (u, v, seed) => {
-    const n = fbmCyl(u, v, seed, 6, 5, 0.6);
-    const n2 = fbmCyl(u, v, seed + 500, 4, 14, 0.5);
-    const t = clamp01(n * 0.7 + n2 * 0.45 - 0.12);
-    return [255, 175 + 60 * t, 40 + 120 * t * t];
-  }, 101);
+  return renderTexture(
+    "sun",
+    (u, v, seed) => {
+      const n = fbmCyl(u, v, seed, 6, 5, 0.6);
+      const n2 = fbmCyl(u, v, seed + 500, 4, 14, 0.5);
+      const t = clamp01(n * 0.7 + n2 * 0.45 - 0.12);
+      return [255, 175 + 60 * t, 40 + 120 * t * t];
+    },
+    101,
+  );
 }
 
 export function mercuryTexture(): THREE.CanvasTexture {
-  return withCraters("mercury", (u, v, seed) => {
-    const n = fbmCyl(u, v, seed, 5, 4);
-    const t = 0.55 + 0.45 * n;
-    const r = 128 * t, g = 118 * t, b = 110 * t;
-    return [r, g, b];
-  }, 202, 260);
+  return withCraters(
+    "mercury",
+    (u, v, seed) => {
+      const n = fbmCyl(u, v, seed, 5, 4);
+      const t = 0.55 + 0.45 * n;
+      const r = 128 * t,
+        g = 118 * t,
+        b = 110 * t;
+      return [r, g, b];
+    },
+    202,
+    260,
+  );
 }
 
 export function venusTexture(): THREE.CanvasTexture {
-  return renderTexture("venus", (u, v, seed) => {
-    // Swirling sulfuric-acid cloud bands
-    const warp = fbmCyl(u, v, seed, 4, 3) * 0.35;
-    const band = fbmCyl(u + warp, v * 1.4, seed + 90, 5, 6, 0.6);
-    const t = clamp01(band * 0.8 + 0.25);
-    return [210 + 40 * t, 175 + 55 * t, 115 + 70 * t];
-  }, 303);
+  return renderTexture(
+    "venus",
+    (u, v, seed) => {
+      // Swirling sulfuric-acid cloud bands
+      const warp = fbmCyl(u, v, seed, 4, 3) * 0.35;
+      const band = fbmCyl(u + warp, v * 1.4, seed + 90, 5, 6, 0.6);
+      const t = clamp01(band * 0.8 + 0.25);
+      return [210 + 40 * t, 175 + 55 * t, 115 + 70 * t];
+    },
+    303,
+  );
 }
 
-export function earthTexture(): { map: THREE.CanvasTexture; clouds: THREE.CanvasTexture; specular: THREE.CanvasTexture } {
+export function earthTexture(): {
+  map: THREE.CanvasTexture;
+  clouds: THREE.CanvasTexture;
+  specular: THREE.CanvasTexture;
+} {
   const oceanMask = new Float32Array(W * H);
 
-  const map = renderTexture("earth", (u, v, seed) => {
-    const warp = fbmCyl(u, v, seed + 4000, 3, 2.5) * 0.18;
-    const cont = fbmCyl(u + warp, v + warp * 0.6, seed, 6, 3.2, 0.55);
-    const detail = fbmCyl(u, v, seed + 77, 4, 12, 0.5);
-    const lat = Math.abs(v - 0.5) * 2; // 0 equator .. 1 pole
-    const idx = Math.floor(v * (H - 1)) * W + Math.floor(u * W);
-    let r: number, g: number, b: number;
+  const map = renderTexture(
+    "earth",
+    (u, v, seed) => {
+      const warp = fbmCyl(u, v, seed + 4000, 3, 2.5) * 0.18;
+      const cont = fbmCyl(u + warp, v + warp * 0.6, seed, 6, 3.2, 0.55);
+      const detail = fbmCyl(u, v, seed + 77, 4, 12, 0.5);
+      const lat = Math.abs(v - 0.5) * 2; // 0 equator .. 1 pole
+      const idx = Math.floor(v * (H - 1)) * W + Math.floor(u * W);
+      let r: number, g: number, b: number;
 
-    if (cont > 0.52) {
-      // Land
-      const h = clamp01((cont - 0.52) / 0.25);
-      const veg = smooth(0, 0.4, detail);
-      r = 45 + 90 * h + 30 * (1 - veg);
-      g = 92 + 40 * h + 25 * veg;
-      b = 38 + 55 * h;
-      if (h > 0.55) { r = 150 + 60 * h; g = 140 + 60 * h; b = 130 + 55 * h; } // highlands
-    } else {
-      // Ocean — deep blue near coasts fades to darker blue
-      const depth = clamp01((0.52 - cont) / 0.2);
-      r = 12 + 20 * (1 - depth);
-      g = 45 + 55 * (1 - depth);
-      b = 105 + 60 * (1 - depth);
-    }
-    oceanMask[idx] = cont > 0.52 ? 0 : 1;
+      if (cont > 0.52) {
+        // Land
+        const h = clamp01((cont - 0.52) / 0.25);
+        const veg = smooth(0, 0.4, detail);
+        r = 45 + 90 * h + 30 * (1 - veg);
+        g = 92 + 40 * h + 25 * veg;
+        b = 38 + 55 * h;
+        if (h > 0.55) {
+          r = 150 + 60 * h;
+          g = 140 + 60 * h;
+          b = 130 + 55 * h;
+        } // highlands
+      } else {
+        // Ocean — deep blue near coasts fades to darker blue
+        const depth = clamp01((0.52 - cont) / 0.2);
+        r = 12 + 20 * (1 - depth);
+        g = 45 + 55 * (1 - depth);
+        b = 105 + 60 * (1 - depth);
+      }
+      oceanMask[idx] = cont > 0.52 ? 0 : 1;
 
-    // Polar ice caps
-    const iceEdge = 0.82 + 0.1 * detail;
-    const ice = smooth(iceEdge - 0.06, iceEdge + 0.02, lat);
-    r = r + (238 - r) * ice;
-    g = g + (242 - g) * ice;
-    b = b + (248 - b) * ice;
+      // Polar ice caps
+      const iceEdge = 0.82 + 0.1 * detail;
+      const ice = smooth(iceEdge - 0.06, iceEdge + 0.02, lat);
+      r = r + (238 - r) * ice;
+      g = g + (242 - g) * ice;
+      b = b + (248 - b) * ice;
 
-    return [r, g, b];
-  }, 404);
+      return [r, g, b];
+    },
+    404,
+  );
 
-  const specular = renderTexture("earth-spec", (u, v) => {
-    const idx = Math.floor(v * (H - 1)) * W + Math.floor(u * W);
-    const s = oceanMask[idx] * 200;
-    return [s, s, s];
-  }, 404, false);
+  const specular = renderTexture(
+    "earth-spec",
+    (u, v) => {
+      const idx = Math.floor(v * (H - 1)) * W + Math.floor(u * W);
+      const s = oceanMask[idx] * 200;
+      return [s, s, s];
+    },
+    404,
+    false,
+  );
 
-  const clouds = renderTexture("earth-clouds", (u, v, seed) => {
-    const c = fbmCyl(u, v, seed + 900, 5, 4, 0.62);
-    const alpha = smooth(0.52, 0.72, c) * 235;
-    return [255, 255, 255, alpha];
-  }, 404, false);
+  const clouds = renderTexture(
+    "earth-clouds",
+    (u, v, seed) => {
+      const c = fbmCyl(u, v, seed + 900, 5, 4, 0.62);
+      const alpha = smooth(0.52, 0.72, c) * 235;
+      return [255, 255, 255, alpha];
+    },
+    404,
+    false,
+  );
   clouds.wrapT = THREE.ClampToEdgeWrapping;
 
   return { map, clouds, specular };
 }
 
 export function marsTexture(): THREE.CanvasTexture {
-  return renderTexture("mars", (u, v, seed) => {
-    const n = fbmCyl(u, v, seed, 6, 4, 0.55);
-    const dark = fbmCyl(u, v, seed + 33, 4, 3, 0.5);
-    const lat = Math.abs(v - 0.5) * 2;
-    let r = 178 + 55 * n;
-    let g = 92 + 40 * n;
-    let b = 52 + 30 * n;
-    // Dark basaltic maria
-    const maria = smooth(0.62, 0.75, dark);
-    r -= 55 * maria; g -= 35 * maria; b -= 22 * maria;
-    // Polar caps
-    const cap = smooth(0.9, 0.985, lat + 0.03 * n);
-    r = r + (235 - r) * cap;
-    g = g + (225 - g) * cap;
-    b = b + (215 - b) * cap;
-    return [clamp01(r / 255) * 255, clamp01(g / 255) * 255, clamp01(b / 255) * 255];
-  }, 505);
+  return renderTexture(
+    "mars",
+    (u, v, seed) => {
+      const n = fbmCyl(u, v, seed, 6, 4, 0.55);
+      const dark = fbmCyl(u, v, seed + 33, 4, 3, 0.5);
+      const lat = Math.abs(v - 0.5) * 2;
+      let r = 178 + 55 * n;
+      let g = 92 + 40 * n;
+      let b = 52 + 30 * n;
+      // Dark basaltic maria
+      const maria = smooth(0.62, 0.75, dark);
+      r -= 55 * maria;
+      g -= 35 * maria;
+      b -= 22 * maria;
+      // Polar caps
+      const cap = smooth(0.9, 0.985, lat + 0.03 * n);
+      r = r + (235 - r) * cap;
+      g = g + (225 - g) * cap;
+      b = b + (215 - b) * cap;
+      return [
+        clamp01(r / 255) * 255,
+        clamp01(g / 255) * 255,
+        clamp01(b / 255) * 255,
+      ];
+    },
+    505,
+  );
 }
 
 export function jupiterTexture(): THREE.CanvasTexture {
-  return renderTexture("jupiter", (u, v, seed) => {
-    // Turbulent latitude bands
-    const warp = (fbmCyl(u, v, seed, 4, 5, 0.5) - 0.5) * 0.09;
-    const lat = v + warp;
-    const band = Math.sin(lat * Math.PI * 14) * 0.5 + 0.5;
-    const storm = fbmCyl(u, lat, seed + 20, 5, 9, 0.55);
-    const t = clamp01(band * 0.55 + storm * 0.5);
+  return renderTexture(
+    "jupiter",
+    (u, v, seed) => {
+      // Turbulent latitude bands
+      const warp = (fbmCyl(u, v, seed, 4, 5, 0.5) - 0.5) * 0.09;
+      const lat = v + warp;
+      const band = Math.sin(lat * Math.PI * 14) * 0.5 + 0.5;
+      const storm = fbmCyl(u, lat, seed + 20, 5, 9, 0.55);
+      const t = clamp01(band * 0.55 + storm * 0.5);
 
-    let r = 185 + 60 * t;
-    let g = 148 + 62 * t;
-    let b = 108 + 78 * t;
+      let r = 185 + 60 * t;
+      let g = 148 + 62 * t;
+      let b = 108 + 78 * t;
 
-    // Great Red Spot (u≈0.7, v≈0.62)
-    let du = Math.abs(u - 0.7);
-    if (du > 0.5) du = 1 - du;
-    const dv = (v - 0.62) / 0.62; // elliptical squash
-    const spot = clamp01(1 - Math.sqrt(du * du * 26 + dv * dv));
-    if (spot > 0) {
-      const s2 = smooth(0.15, 0.9, spot);
-      r = r + (196 - r) * s2;
-      g = g + (88 - g) * s2;
-      b = b + (64 - b) * s2;
-    }
-    return [r, g, b];
-  }, 606);
+      // Great Red Spot (u≈0.7, v≈0.62)
+      let du = Math.abs(u - 0.7);
+      if (du > 0.5) du = 1 - du;
+      const dv = (v - 0.62) / 0.62; // elliptical squash
+      const spot = clamp01(1 - Math.sqrt(du * du * 26 + dv * dv));
+      if (spot > 0) {
+        const s2 = smooth(0.15, 0.9, spot);
+        r = r + (196 - r) * s2;
+        g = g + (88 - g) * s2;
+        b = b + (64 - b) * s2;
+      }
+      return [r, g, b];
+    },
+    606,
+  );
 }
 
 export function saturnTexture(): THREE.CanvasTexture {
-  return renderTexture("saturn", (u, v, seed) => {
-    const warp = (fbmCyl(u, v, seed, 4, 5, 0.5) - 0.5) * 0.05;
-    const lat = v + warp;
-    const band = Math.sin(lat * Math.PI * 11) * 0.5 + 0.5;
-    const soft = fbmCyl(u, lat, seed + 40, 4, 7, 0.5);
-    const t = clamp01(band * 0.45 + soft * 0.4);
-    return [214 + 34 * t, 188 + 40 * t, 142 + 50 * t];
-  }, 707);
+  return renderTexture(
+    "saturn",
+    (u, v, seed) => {
+      const warp = (fbmCyl(u, v, seed, 4, 5, 0.5) - 0.5) * 0.05;
+      const lat = v + warp;
+      const band = Math.sin(lat * Math.PI * 11) * 0.5 + 0.5;
+      const soft = fbmCyl(u, lat, seed + 40, 4, 7, 0.5);
+      const t = clamp01(band * 0.45 + soft * 0.4);
+      return [214 + 34 * t, 188 + 40 * t, 142 + 50 * t];
+    },
+    707,
+  );
 }
 
 export function uranusTexture(): THREE.CanvasTexture {
-  return renderTexture("uranus", (u, v, seed) => {
-    const lat = v + (fbmCyl(u, v, seed, 3, 3, 0.5) - 0.5) * 0.03;
-    const band = Math.sin(lat * Math.PI * 6) * 0.5 + 0.5;
-    const t = clamp01(0.6 + 0.25 * band);
-    return [150 + 30 * t, 210 + 25 * t, 228 + 20 * t];
-  }, 808);
+  return renderTexture(
+    "uranus",
+    (u, v, seed) => {
+      const lat = v + (fbmCyl(u, v, seed, 3, 3, 0.5) - 0.5) * 0.03;
+      const band = Math.sin(lat * Math.PI * 6) * 0.5 + 0.5;
+      const t = clamp01(0.6 + 0.25 * band);
+      return [150 + 30 * t, 210 + 25 * t, 228 + 20 * t];
+    },
+    808,
+  );
 }
 
 export function neptuneTexture(): THREE.CanvasTexture {
-  return renderTexture("neptune", (u, v, seed) => {
-    const warp = (fbmCyl(u, v, seed, 4, 4, 0.5) - 0.5) * 0.07;
-    const band = Math.sin((v + warp) * Math.PI * 9) * 0.5 + 0.5;
-    const storm = fbmCyl(u, v, seed + 15, 4, 6, 0.55);
-    const t = clamp01(band * 0.4 + storm * 0.5);
-    let r = 48 + 40 * t;
-    let g = 78 + 55 * t;
-    let b = 165 + 60 * t;
-    // Great Dark Spot
-    let du = Math.abs(u - 0.3);
-    if (du > 0.5) du = 1 - du;
-    const dv = (v - 0.42) / 0.5;
-    const spot = clamp01(1 - Math.sqrt(du * du * 34 + dv * dv));
-    if (spot > 0) {
-      const s2 = smooth(0.2, 0.9, spot);
-      r = r * (1 - 0.55 * s2);
-      g = g * (1 - 0.5 * s2);
-      b = b * (1 - 0.35 * s2);
-    }
-    return [r, g, b];
-  }, 909);
+  return renderTexture(
+    "neptune",
+    (u, v, seed) => {
+      const warp = (fbmCyl(u, v, seed, 4, 4, 0.5) - 0.5) * 0.07;
+      const band = Math.sin((v + warp) * Math.PI * 9) * 0.5 + 0.5;
+      const storm = fbmCyl(u, v, seed + 15, 4, 6, 0.55);
+      const t = clamp01(band * 0.4 + storm * 0.5);
+      let r = 48 + 40 * t;
+      let g = 78 + 55 * t;
+      let b = 165 + 60 * t;
+      // Great Dark Spot
+      let du = Math.abs(u - 0.3);
+      if (du > 0.5) du = 1 - du;
+      const dv = (v - 0.42) / 0.5;
+      const spot = clamp01(1 - Math.sqrt(du * du * 34 + dv * dv));
+      if (spot > 0) {
+        const s2 = smooth(0.2, 0.9, spot);
+        r = r * (1 - 0.55 * s2);
+        g = g * (1 - 0.5 * s2);
+        b = b * (1 - 0.35 * s2);
+      }
+      return [r, g, b];
+    },
+    909,
+  );
 }
 
 export function moonTexture(): THREE.CanvasTexture {
-  return withCraters("moon", (u, v, seed) => {
-    const n = fbmCyl(u, v, seed, 5, 4);
-    const mare = fbmCyl(u, v, seed + 61, 4, 2.2, 0.5);
-    let t = 118 + 72 * n;
-    t -= 45 * smooth(0.6, 0.78, mare); // dark maria
-    return [t, t, t + 4];
-  }, 1010, 320);
+  return withCraters(
+    "moon",
+    (u, v, seed) => {
+      const n = fbmCyl(u, v, seed, 5, 4);
+      const mare = fbmCyl(u, v, seed + 61, 4, 2.2, 0.5);
+      let t = 118 + 72 * n;
+      t -= 45 * smooth(0.6, 0.78, mare); // dark maria
+      return [t, t, t + 4];
+    },
+    1010,
+    320,
+  );
 }
 
 /** Radial-stripe ring texture: u maps to radius. */

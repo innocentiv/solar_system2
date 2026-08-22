@@ -77,7 +77,10 @@ function elementsAt(el: OrbitalElements, days: number): ResolvedElements {
 /**
  * Heliocentric position (AU, ecliptic frame) of a body at `days` since J2000.
  */
-export function heliocentricPosition(el: OrbitalElements, days: number): EclipticPosition {
+export function heliocentricPosition(
+  el: OrbitalElements,
+  days: number,
+): EclipticPosition {
   const { a, e, i, L, varpi, Omega } = elementsAt(el, days);
 
   const w = (varpi - Omega) * DEG2RAD; // argument of perihelion
@@ -93,9 +96,12 @@ export function heliocentricPosition(el: OrbitalElements, days: number): Eclipti
 
   // Rotate to the ecliptic frame: R = Rz(-Ω) · Rx(-i) · Rz(-ω)
   // Ecliptic convention: (x, y) in the plane, z out of plane.
-  const cw = Math.cos(w), sw = Math.sin(w);
-  const ci = Math.cos(inc), si = Math.sin(inc);
-  const co = Math.cos(omega), so = Math.sin(omega);
+  const cw = Math.cos(w),
+    sw = Math.sin(w);
+  const ci = Math.cos(inc),
+    si = Math.sin(inc);
+  const co = Math.cos(omega),
+    so = Math.sin(omega);
 
   const X1 = cw * xp - sw * yp;
   const Y1 = sw * xp + cw * yp;
@@ -111,15 +117,21 @@ export function heliocentricPosition(el: OrbitalElements, days: number): Eclipti
  * Sample the full orbital ellipse (one period) for rendering orbit lines.
  * Uses the same rotation pipeline as heliocentricPosition.
  */
-export function orbitEllipsePoints(el: OrbitalElements, samples = 256): EclipticPosition[] {
+export function orbitEllipsePoints(
+  el: OrbitalElements,
+  samples = 256,
+): EclipticPosition[] {
   const { a, e, i, varpi, Omega } = elementsAt(el, 0);
   const w = (varpi - Omega) * DEG2RAD;
   const omega = Omega * DEG2RAD;
   const inc = i * DEG2RAD;
 
-  const cw = Math.cos(w), sw = Math.sin(w);
-  const ci = Math.cos(inc), si = Math.sin(inc);
-  const co = Math.cos(omega), so = Math.sin(omega);
+  const cw = Math.cos(w),
+    sw = Math.sin(w);
+  const ci = Math.cos(inc),
+    si = Math.sin(inc);
+  const co = Math.cos(omega),
+    so = Math.sin(omega);
   const b = a * Math.sqrt(1 - e * e);
 
   const pts: EclipticPosition[] = [];
@@ -149,12 +161,18 @@ export function orbitalPeriodDays(aAU: number): number {
  * Convert an ecliptic position (AU) to scene coordinates.
  * Ecliptic frame: (x, y) in the plane, z out of plane → scene: (x, z, -y) with Y up.
  */
-export function toScene(p: EclipticPosition, au: number): { x: number; y: number; z: number } {
+export function toScene(
+  p: EclipticPosition,
+  au: number,
+): { x: number; y: number; z: number } {
   return { x: p.x * au, y: p.z * au, z: -p.y * au };
 }
 
 /** Heliocentric distance (AU) of a body at a given time — used for facts display. */
-export function heliocentricDistance(el: OrbitalElements, days: number): number {
+export function heliocentricDistance(
+  el: OrbitalElements,
+  days: number,
+): number {
   const p = heliocentricPosition(el, days);
   return Math.sqrt(p.x * p.x + p.y * p.y + p.z * p.z);
 }
