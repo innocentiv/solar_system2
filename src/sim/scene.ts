@@ -186,10 +186,11 @@ function makeAsteroidBelt(scene: THREE.Scene): AsteroidBelt {
   const positions = new Float32Array(N * 3);
   const colors = new Float32Array(N * 3);
   for (let i = 0; i < N; i++) {
-    const b = 0.35 + Math.random() * 0.4;
-    colors[i * 3] = b * (1 + 0.08 * Math.random());
+    // Muted dust: dim grayish-brown specks, not bright particles
+    const b = 0.14 + Math.random() * 0.22;
+    colors[i * 3] = b * (1 + 0.1 * Math.random());
     colors[i * 3 + 1] = b;
-    colors[i * 3 + 2] = b * (1 - 0.12 * Math.random());
+    colors[i * 3 + 2] = b * (1 - 0.15 * Math.random());
   }
 
   const geo = new THREE.BufferGeometry();
@@ -198,11 +199,11 @@ function makeAsteroidBelt(scene: THREE.Scene): AsteroidBelt {
   const points = new THREE.Points(
     geo,
     new THREE.PointsMaterial({
-      size: 1.6,
+      size: 1.4,
       sizeAttenuation: false,
       vertexColors: true,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.55,
       depthWrite: false,
     }),
   );
