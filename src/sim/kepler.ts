@@ -119,7 +119,7 @@ export function heliocentricPosition(
  */
 export function orbitEllipsePoints(
   el: OrbitalElements,
-  samples = 256,
+  samples = 2048,
 ): EclipticPosition[] {
   const { a, e, i, varpi, Omega } = elementsAt(el, 0);
   const w = (varpi - Omega) * DEG2RAD;
