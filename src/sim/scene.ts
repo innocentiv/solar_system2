@@ -35,6 +35,11 @@ export interface BodyScene {
   orbitLine?: THREE.LineLoop;
 }
 
+export interface AsteroidBelt {
+  /** Advance the belt to a simulation time (days since J2000) */
+  update: (days: number) => void;
+}
+
 export interface SceneRefs {
   renderer: THREE.WebGLRenderer;
   labelRenderer: CSS2DRenderer;
@@ -45,6 +50,7 @@ export interface SceneRefs {
   bodies: Map<string, BodyScene>;
   /** Screen-fixed-size marker dots so true-scale (sub-pixel) bodies stay visible and pickable */
   markers: THREE.Points;
+  asteroidBelt: AsteroidBelt;
 }
 
 export function buildScene(container: HTMLElement): SceneRefs {
@@ -119,6 +125,8 @@ export function buildScene(container: HTMLElement): SceneRefs {
     }
   }
 
+  const asteroidBelt = makeAsteroidBelt(scene);
+
   return {
     renderer,
     labelRenderer,
@@ -128,6 +136,104 @@ export function buildScene(container: HTMLElement): SceneRefs {
     scene,
     bodies,
     markers: buildMarkers(bodies, scene),
+    asteroidBelt,
+  };
+}
+
+/**
+ * Main asteroid belt: a few thousand particles on Keplerian orbits between
+ * Mars and Jupiter (2.0–3.45 AU), with the three strongest Kirkwood gaps
+ * (3:1, 5:2, 7:3 Jupiter resonances) carved out.
+ */
+function makeAsteroidBelt(scene: THREE.Scene): AsteroidBelt {
+  const N = 4500;
+  const D2R = Math.PI / 180;
+  const a = new Float32Array(N); // semi-major axis (AU)
+  const ecc = new Float32Array(N);
+  const inc = new Float32Array(N); // radians
+  const node = new Float32Array(N); // ascending node (rad)
+  const m0 = new Float32Array(N); // mean longitude at J2000 (rad)
+  const period = new Float32Array(N); // days
+
+  // Mean of 3 uniforms → centered, triangular-ish distribution
+  const spread = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
+  const gaps = [2.5, 2.82, 2.95];
+
+  let placed = 0;
+  while (placed < N) {
+    const av = 2.7 + spread() * 0.42;
+    if (av < 2.0 || av > 3.45) continue;
+    // Kirkwood gaps: suppress most particles near the resonances
+    let skip = false;
+    for (const g of gaps) {
+      if (Math.abs(av - g) < 0.035) {
+        skip = Math.random() < 0.85;
+        break;
+      }
+    }
+    if (skip) continue;
+
+    a[placed] = av;
+    ecc[placed] = 0.02 + Math.random() * 0.1;
+    inc[placed] = (Math.abs(spread()) * 3.5 + 0.2) * D2R;
+    node[placed] = Math.random() * Math.PI * 2;
+    m0[placed] = Math.random() * Math.PI * 2;
+    period[placed] = 365.25 * Math.sqrt(av * av * av);
+    placed++;
+  }
+
+  const positions = new Float32Array(N * 3);
+  const colors = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    const b = 0.35 + Math.random() * 0.4;
+    colors[i * 3] = b * (1 + 0.08 * Math.random());
+    colors[i * 3 + 1] = b;
+    colors[i * 3 + 2] = b * (1 - 0.12 * Math.random());
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  const points = new THREE.Points(
+    geo,
+    new THREE.PointsMaterial({
+      size: 1.6,
+      sizeAttenuation: false,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,
+    }),
+  );
+  points.frustumCulled = false;
+  scene.add(points);
+
+  const posAttr = geo.getAttribute("position") as THREE.BufferAttribute;
+
+  return {
+    update(days: number): void {
+      for (let i = 0; i < N; i++) {
+        const M = m0[i] + (days / period[i]) * Math.PI * 2;
+        // Small-eccentricity approximation: r ≈ a(1 − e·cos M),
+        // true anomaly ≈ M + 2e·sin M
+        const e = ecc[i];
+        const r = a[i] * (1 - e * Math.cos(M)) * AU_IN_SCENE_UNITS;
+        const theta = M + 2 * e * Math.sin(M);
+        const x = r * Math.cos(theta);
+        const y = r * Math.sin(theta);
+        // Rotate by node, tilt by inclination
+        const cN = Math.cos(node[i]);
+        const sN = Math.sin(node[i]);
+        const ci = Math.cos(inc[i]);
+        const si = Math.sin(inc[i]);
+        const x1 = x * cN - y * sN;
+        const y1 = x * sN + y * cN;
+        positions[i * 3] = x1;
+        positions[i * 3 + 1] = y1 * si;
+        positions[i * 3 + 2] = -y1 * ci;
+      }
+      posAttr.needsUpdate = true;
+    },
   };
 }
 
@@ -142,6 +248,16 @@ const MARKER_COLORS: Record<string, string> = {
   uranus: "#9ad4e0",
   neptune: "#6f8cff",
   moon: "#c8c8d0",
+  phobos: "#9a8a7a",
+  deimos: "#b0a898",
+  io: "#ffd75e",
+  europa: "#e8e0d0",
+  ganymede: "#b8b0a8",
+  callisto: "#8a8478",
+  titan: "#e8a84c",
+  rhea: "#d0d0d8",
+  titania: "#b8c0d0",
+  triton: "#e0d8cc",
 };
 
 /**
@@ -313,6 +429,19 @@ function buildBody(def: CelestialBodyDef): BodyScene {
       def.id,
     );
     const segments = isGasGiant ? 64 : 48;
+    const MOON_TEXTURES: Record<string, () => THREE.CanvasTexture> = {
+      moon: T.moonTexture,
+      phobos: T.phobosTexture,
+      deimos: T.deimosTexture,
+      io: T.ioTexture,
+      europa: T.europaTexture,
+      ganymede: T.ganymedeTexture,
+      callisto: T.callistoTexture,
+      titan: T.titanTexture,
+      rhea: T.rheaTexture,
+      titania: T.titaniaTexture,
+      triton: T.tritonTexture,
+    };
     const texture =
       def.id === "mercury"
         ? T.mercuryTexture()
@@ -328,7 +457,7 @@ function buildBody(def: CelestialBodyDef): BodyScene {
                   ? T.uranusTexture()
                   : def.id === "neptune"
                     ? T.neptuneTexture()
-                    : T.moonTexture();
+                    : (MOON_TEXTURES[def.id] ?? T.moonTexture)();
 
     // Earth: Phong material for a sun-glint on the oceans, plus a
     // separate drifting cloud layer.
@@ -419,9 +548,9 @@ function buildBody(def: CelestialBodyDef): BodyScene {
             opacity: 0.35,
           }),
         );
-      } else if (def.parent === "earth") {
+      } else if (def.parent !== null) {
         // Moon orbit: its true elliptical elements, at true scale, in
-        // Earth-centered coordinates (re-parented to Earth's group above)
+        // parent-centered coordinates (re-parented to the parent's group above)
         const pts = orbitEllipsePoints(def.elements).map((p) => {
           const s = toScene(p, AU_IN_SCENE_UNITS);
           return new THREE.Vector3(s.x, s.y, s.z);
@@ -431,7 +560,7 @@ function buildBody(def: CelestialBodyDef): BodyScene {
           new THREE.LineBasicMaterial({
             color: 0x555f70,
             transparent: true,
-            opacity: 0.3,
+            opacity: 0.22,
           }),
         );
         group.add(orbitLine);

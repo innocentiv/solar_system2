@@ -167,6 +167,7 @@ export class Simulation {
     this.updateCamera(nowMs);
 
     this.updateMarkers();
+    this.refs.asteroidBelt.update(this.simDays);
     this.refs.controls.update();
     this.refs.composer.render();
     this.refs.labelRenderer.render(this.refs.scene, this.refs.camera);

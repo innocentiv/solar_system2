@@ -108,10 +108,12 @@ function check(
   }
 }
 
-// --- Position sanity for all bodies at J2000 ---------------------------------
+// --- Position sanity for all orbiting bodies at J2000 (planets + moons) -----
+// heliocentricPosition returns parent-centered coordinates, so the same
+// perihelion/aphelion bound check applies to every body with elements.
 {
   for (const b of BODIES) {
-    if (!b.elements || b.parent !== null) continue;
+    if (!b.elements) continue;
     const p = heliocentricPosition(b.elements, 0);
     const r = Math.hypot(p.x, p.y, p.z);
     const a = b.elements.a;

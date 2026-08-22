@@ -103,10 +103,12 @@ function renderTexture(
   fn: PixelFn,
   seed: number,
   srgb = true,
+  w = W,
+  h = H,
 ): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
-  canvas.width = W;
-  canvas.height = H;
+  canvas.width = w;
+  canvas.height = h;
   const ctx = getCtx(canvas);
   const img = ctx.createImageData(W, H);
   const d = img.data;
@@ -161,8 +163,10 @@ function withCraters(
   fn: PixelFn,
   seed: number,
   craters: number,
+  w = W,
+  h = H,
 ): THREE.CanvasTexture {
-  const tex = renderTexture(name, fn, seed);
+  const tex = renderTexture(name, fn, seed, true, w, h);
   const canvas = tex.image as HTMLCanvasElement;
   const ctx = getCtx(canvas);
   craterize(
@@ -428,6 +432,212 @@ export function moonTexture(): THREE.CanvasTexture {
     },
     1010,
     320,
+  );
+}
+
+const MW = 512; // moon texture width (small moons rarely get closer than a few px)
+const MH = 256;
+
+export function phobosTexture(): THREE.CanvasTexture {
+  return withCraters(
+    "phobos",
+    (u, v, seed) => {
+      const n = fbmCyl(u, v, seed, 4, 5);
+      const t = 62 + 42 * n;
+      return [t + 8, t, t - 6];
+    },
+    2001,
+    120,
+    MW,
+    MH,
+  );
+}
+
+export function deimosTexture(): THREE.CanvasTexture {
+  return withCraters(
+    "deimos",
+    (u, v, seed) => {
+      const n = fbmCyl(u, v, seed, 4, 5);
+      const t = 92 + 40 * n;
+      return [t + 6, t, t - 4];
+    },
+    2002,
+    90,
+    MW,
+    MH,
+  );
+}
+
+export function ioTexture(): THREE.CanvasTexture {
+  return renderTexture(
+    "io",
+    (u, v, seed) => {
+      // Sulfur plains with darker volcanic patches
+      const n = fbmCyl(u, v, seed, 5, 4, 0.55);
+      const m = fbmCyl(u, v, seed + 7, 4, 7, 0.5);
+      let r = 205 + 40 * n;
+      let g = 185 + 45 * n;
+      let b = 95 + 60 * n;
+      const volc = smooth(0.62, 0.78, m);
+      r = r - 120 * volc;
+      g = g - 100 * volc;
+      b = b - 60 * volc;
+      // Bright SO2 frost caps
+      const lat = Math.abs(v - 0.5) * 2;
+      const frost = smooth(0.88, 0.99, lat);
+      r = r + (250 - r) * frost;
+      g = g + (245 - g) * frost;
+      b = b + (200 - b) * frost;
+      return [r, g, b];
+    },
+    2003,
+    true,
+    MW,
+    MH,
+  );
+}
+
+export function europaTexture(): THREE.CanvasTexture {
+  return renderTexture(
+    "europa",
+    (u, v, seed) => {
+      // Pale ice with dark lineae (ridged fracture bands)
+      const n = fbmCyl(u, v, seed, 4, 3, 0.5);
+      let r = 218 + 22 * n;
+      let g = 205 + 24 * n;
+      let b = 185 + 28 * n;
+      const ridges = fbmCyl(u * 3.0, v * 1.2, seed + 31, 4, 9, 0.6);
+      const lineae = 1 - smooth(0.42, 0.5, ridges);
+      r = r - 90 * lineae;
+      g = g - 95 * lineae;
+      b = b - 105 * lineae;
+      // Reddish sulfur streaks
+      const stain = smooth(0.68, 0.82, fbmCyl(u, v, seed + 61, 3, 5, 0.5));
+      r = r + 20 * stain;
+      g = g - 8 * stain;
+      b = b - 25 * stain;
+      return [r, g, b];
+    },
+    2004,
+    true,
+    MW,
+    MH,
+  );
+}
+
+export function ganymedeTexture(): THREE.CanvasTexture {
+  return withCraters(
+    "ganymede",
+    (u, v, seed) => {
+      // Two distinct terrains: dark terrae vs bright grooved ice
+      const patch = fbmCyl(u, v, seed, 4, 2.2, 0.5);
+      const bright = smooth(0.52, 0.6, patch);
+      const n = fbmCyl(u, v, seed + 13, 4, 6, 0.5);
+      const r = 95 + 105 * bright + 18 * n;
+      const g = 95 + 100 * bright + 16 * n;
+      const b = 100 + 95 * bright + 14 * n;
+      return [r, g, b];
+    },
+    2005,
+    70,
+    MW,
+    MH,
+  );
+}
+
+export function callistoTexture(): THREE.CanvasTexture {
+  return withCraters(
+    "callisto",
+    (u, v, seed) => {
+      const n = fbmCyl(u, v, seed, 4, 4, 0.5);
+      const t = 78 + 42 * n;
+      return [t + 6, t, t - 8];
+    },
+    2006,
+    260,
+    MW,
+    MH,
+  );
+}
+
+export function titanTexture(): THREE.CanvasTexture {
+  // Titan is hidden under a thick orange haze — nearly featureless
+  return renderTexture(
+    "titan",
+    (u, v, seed) => {
+      const n = fbmCyl(u, v, seed, 3, 3, 0.5);
+      const lat = Math.abs(v - 0.5) * 2;
+      const r = 188 + 14 * n;
+      const g = 112 + 16 * n;
+      const b = 48 + 12 * n;
+      // Slightly darker polar region
+      const pole = smooth(0.85, 0.99, lat);
+      return [r - 25 * pole, g - 22 * pole, b - 8 * pole];
+    },
+    2007,
+    true,
+    MW,
+    MH,
+  );
+}
+
+export function rheaTexture(): THREE.CanvasTexture {
+  return withCraters(
+    "rhea",
+    (u, v, seed) => {
+      const n = fbmCyl(u, v, seed, 4, 4, 0.5);
+      let t = 168 + 46 * n;
+      // Bright equatorial band of fine dust
+      const eq = 1 - smooth(0, 0.12, Math.abs(v - 0.5) * 2);
+      t += 26 * eq;
+      return [t, t + 2, t + 6];
+    },
+    2008,
+    160,
+    MW,
+    MH,
+  );
+}
+
+export function titaniaTexture(): THREE.CanvasTexture {
+  return withCraters(
+    "titania",
+    (u, v, seed) => {
+      const n = fbmCyl(u, v, seed, 4, 4, 0.5);
+      const t = 152 + 42 * n;
+      return [t, t + 3, t + 10];
+    },
+    2009,
+    130,
+    MW,
+    MH,
+  );
+}
+
+export function tritonTexture(): THREE.CanvasTexture {
+  return withCraters(
+    "triton",
+    (u, v, seed) => {
+      const n = fbmCyl(u, v, seed, 4, 4, 0.5);
+      let r = 214 + 26 * n;
+      let g = 210 + 26 * n;
+      let b = 198 + 28 * n;
+      // Dark red cantaloupe-terrain patch (cantaloupe = south pole, v≈0.85)
+      const du = Math.abs(u - 0.3);
+      const duw = Math.min(du, 1 - du);
+      const spot = clamp01(
+        1 - Math.sqrt(duw * duw * 10 + ((v - 0.85) / 0.35) ** 2),
+      );
+      const s2 = smooth(0.1, 0.85, spot);
+      r = r - 95 * s2;
+      g = g - 100 * s2;
+      b = b - 95 * s2;
+      return [r, g, b];
+    },
+    2010,
+    60,
+    MW,
+    MH,
   );
 }
 

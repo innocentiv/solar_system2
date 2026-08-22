@@ -19,6 +19,16 @@ const SWATCH: Record<string, string> = {
   uranus: "#9ad4e0",
   neptune: "#4a6fd8",
   moon: "#b8b8bd",
+  phobos: "#9a8a7a",
+  deimos: "#b0a898",
+  io: "#ffd75e",
+  europa: "#e8e0d0",
+  ganymede: "#b8b0a8",
+  callisto: "#8a8478",
+  titan: "#e8a84c",
+  rhea: "#d0d0d8",
+  titania: "#b8c0d0",
+  triton: "#e0d8cc",
 };
 
 const KIND_LABEL: Record<string, string> = {
