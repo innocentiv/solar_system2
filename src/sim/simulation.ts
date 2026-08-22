@@ -169,6 +169,7 @@ export class Simulation {
 
     this.updateMarkers();
     this.refs.asteroidBelt.update(this.simDays);
+    this.refs.asteroidBelt.lod(this.refs.camera.position.length());
     this.refs.controls.update();
     this.refs.composer.render();
     this.refs.labelRenderer.render(this.refs.scene, this.refs.camera);

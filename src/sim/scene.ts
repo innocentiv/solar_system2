@@ -38,6 +38,8 @@ export interface BodyScene {
 export interface AsteroidBelt {
   /** Advance the belt to a simulation time (days since J2000) */
   update: (days: number) => void;
+  /** Density LOD: more dots rendered the closer the camera is to the Sun */
+  lod: (cameraDistance: number) => void;
 }
 
 export interface SceneRefs {
@@ -146,7 +148,7 @@ export function buildScene(container: HTMLElement): SceneRefs {
  * (3:1, 5:2, 7:3 Jupiter resonances) carved out.
  */
 function makeAsteroidBelt(scene: THREE.Scene): AsteroidBelt {
-  const N = 4500;
+  const N = 9000;
   const D2R = Math.PI / 180;
   const a = new Float32Array(N); // semi-major axis (AU)
   const ecc = new Float32Array(N);
@@ -186,11 +188,11 @@ function makeAsteroidBelt(scene: THREE.Scene): AsteroidBelt {
   const positions = new Float32Array(N * 3);
   const colors = new Float32Array(N * 3);
   for (let i = 0; i < N; i++) {
-    // Muted dust: dim grayish-brown specks, not bright particles
-    const b = 0.14 + Math.random() * 0.22;
-    colors[i * 3] = b * (1 + 0.1 * Math.random());
+    // Dark, near-neutral gray dust — must read as darker than the starfield
+    const b = 0.1 + Math.random() * 0.16;
+    colors[i * 3] = b * (1 + 0.05 * Math.random());
     colors[i * 3 + 1] = b;
-    colors[i * 3 + 2] = b * (1 - 0.15 * Math.random());
+    colors[i * 3 + 2] = b * (1 - 0.05 * Math.random());
   }
 
   const geo = new THREE.BufferGeometry();
@@ -203,7 +205,7 @@ function makeAsteroidBelt(scene: THREE.Scene): AsteroidBelt {
       sizeAttenuation: false,
       vertexColors: true,
       transparent: true,
-      opacity: 0.55,
+      opacity: 0.5,
       depthWrite: false,
     }),
   );
@@ -211,6 +213,7 @@ function makeAsteroidBelt(scene: THREE.Scene): AsteroidBelt {
   scene.add(points);
 
   const posAttr = geo.getAttribute("position") as THREE.BufferAttribute;
+  let lastCount = -1;
 
   return {
     update(days: number): void {
@@ -235,6 +238,16 @@ function makeAsteroidBelt(scene: THREE.Scene): AsteroidBelt {
         positions[i * 3 + 2] = -y1 * ci;
       }
       posAttr.needsUpdate = true;
+    },
+    lod(cameraDistance: number): void {
+      // Far: sparse (clustered dots would read as a bright band). Near:
+      // full density, so the belt resolves into individual asteroids.
+      const count =
+        cameraDistance > 250 ? 2200 : cameraDistance > 80 ? 4800 : N;
+      if (count !== lastCount) {
+        lastCount = count;
+        geo.setDrawRange(0, count);
+      }
     },
   };
 }
