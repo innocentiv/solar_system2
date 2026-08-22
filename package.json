@@ -1,0 +1,19 @@
+{
+  "name": "solar-system",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 47823 --strictPort",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 47823"
+  },
+  "dependencies": {
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@types/three": "^0.185.4",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2"
+  }
+}
