@@ -332,32 +332,111 @@ export function marsTexture(): THREE.CanvasTexture {
   );
 }
 
+// Jupiter's latitude palette (south pole → north pole): pale blue-gray
+// polar caps with vortex mottling, then alternating cream/tan/rust zones
+// and belts converging on the pale Equatorial Zone.
+const JUPITER_STOPS: [number, [number, number, number]][] = [
+  [0.0, [162, 173, 187]],
+  [0.07, [174, 170, 156]],
+  [0.13, [146, 116, 90]],
+  [0.19, [212, 193, 157]],
+  [0.25, [168, 126, 88]],
+  [0.31, [229, 217, 191]],
+  [0.37, [185, 140, 96]],
+  [0.44, [232, 222, 197]],
+  [0.5, [218, 198, 167]],
+  [0.56, [185, 140, 96]],
+  [0.63, [229, 217, 191]],
+  [0.69, [168, 126, 88]],
+  [0.75, [212, 193, 157]],
+  [0.81, [146, 116, 90]],
+  [0.87, [174, 170, 156]],
+  [0.94, [162, 173, 187]],
+  [1.0, [162, 173, 187]],
+];
+
+function jupiterBandColor(t: number): [number, number, number] {
+  const x = clamp01(t);
+  for (let i = 1; i < JUPITER_STOPS.length; i++) {
+    const [t1, c1] = JUPITER_STOPS[i];
+    if (x <= t1) {
+      const [t0, c0] = JUPITER_STOPS[i - 1];
+      const k = (x - t0) / (t1 - t0);
+      const s = k * k * (3 - 2 * k);
+      return [
+        c0[0] + (c1[0] - c0[0]) * s,
+        c0[1] + (c1[1] - c0[1]) * s,
+        c0[2] + (c1[2] - c0[2]) * s,
+      ];
+    }
+  }
+  return JUPITER_STOPS[JUPITER_STOPS.length - 1][1];
+}
+
 export function jupiterTexture(): THREE.CanvasTexture {
   return renderTexture(
     "jupiter",
     (u, v, seed) => {
-      // Turbulent latitude bands
-      const warp = (fbmCyl(u, v, seed, 4, 5, 0.5) - 0.5) * 0.09;
-      const lat = v + warp;
-      const band = Math.sin(lat * Math.PI * 14) * 0.5 + 0.5;
-      const storm = fbmCyl(u, lat, seed + 20, 5, 9, 0.55);
-      const t = clamp01(band * 0.55 + storm * 0.5);
+      // Band edges undulate gently: low-frequency noise only. High v-
+      // frequency here is what made the previous version look sawtoothed.
+      const warp = (fbmCyl(u, v, seed, 3, 2.2, 0.5) - 0.5) * 0.03;
+      const [r0, g0, b0] = jupiterBandColor(v + warp);
 
-      let r = 185 + 60 * t;
-      let g = 148 + 62 * t;
-      let b = 108 + 78 * t;
+      // Fine cloud texture within the bands (brightness only, no band shift)
+      const detail = fbmCyl(u, v, seed + 20, 4, 10, 0.5);
+      const mod = 1 + (detail - 0.5) * 0.2;
+      let r = r0 * mod;
+      let g = g0 * mod;
+      let b = b0 * mod;
 
-      // Great Red Spot (u≈0.7, v≈0.62)
+      // Polar vortex mottling
+      const polar = 1 - smooth(0.0, 0.09, Math.abs(v - 0.5) * 2);
+      const mottle = fbmCyl(u, v, seed + 90, 4, 6, 0.5);
+      const pm = polar * (mottle - 0.5) * 0.3;
+      r *= 1 + pm;
+      g *= 1 + pm;
+      b *= 1 + pm;
+
+      // Great Red Spot: compact, sharp, with a pale collar. Real size is
+      // ~4% of the circumference wide (~2% tall).
       let du = Math.abs(u - 0.7);
       if (du > 0.5) du = 1 - du;
-      const dv = (v - 0.62) / 0.62; // elliptical squash
-      const spot = clamp01(1 - Math.sqrt(du * du * 26 + dv * dv));
-      if (spot > 0) {
-        const s2 = smooth(0.15, 0.9, spot);
-        r = r + (196 - r) * s2;
-        g = g + (88 - g) * s2;
-        b = b + (64 - b) * s2;
+      const q = Math.sqrt((du / 0.024) ** 2 + ((v - 0.62) / 0.048) ** 2);
+      const core = 1 - smooth(0.6, 1.0, q);
+      const collar = smooth(0.72, 1.0, q) * (1 - smooth(1.15, 1.5, q));
+      if (core > 0) {
+        // Internal swirl so the spot reads as a rotating vortex, not a blob
+        const swirl = fbmCyl(u, v, seed + 500, 4, 22, 0.5);
+        const sr = 186 + (swirl - 0.5) * 55;
+        const sg = 78 + (swirl - 0.5) * 40;
+        const sb = 54 + (swirl - 0.5) * 30;
+        r = r + (sr - r) * core;
+        g = g + (sg - g) * core;
+        b = b + (sb - b) * core;
       }
+      if (collar > 0) {
+        r = r + (234 - r) * collar * 0.6;
+        g = g + (214 - g) * collar * 0.6;
+        b = b + (186 - b) * collar * 0.6;
+      }
+
+      // Small white oval storms in the south temperate zone
+      const ovals: [number, number, number, number][] = [
+        [0.35, 0.58, 0.012, 0.022],
+        [0.55, 0.665, 0.009, 0.018],
+        [0.15, 0.55, 0.011, 0.02],
+        [0.84, 0.575, 0.01, 0.017],
+      ];
+      for (const [ou, ov, su, sv] of ovals) {
+        let ouw = Math.abs(u - ou);
+        if (ouw > 0.5) ouw = 1 - ouw;
+        const qq = Math.sqrt((ouw / su) ** 2 + ((v - ov) / sv) ** 2);
+        const om = (1 - smooth(0.5, 1.0, qq)) * 0.85;
+        r = r + (240 - r) * om;
+        g = g + (234 - g) * om;
+        b = b + (222 - b) * om;
+      }
+
       return [r, g, b];
     },
     606,
