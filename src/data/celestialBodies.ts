@@ -122,6 +122,39 @@ const planets: CelestialBodyDef[] = [
     },
   },
   {
+    id: "moon",
+    name: "Moon",
+    kind: "moon",
+    parent: "earth",
+    radiusKm: 1737.4,
+    elements: {
+      // Mean elements for the Moon's orbit about Earth (approximate)
+      a: 0.00257,
+      e: 0.0549,
+      i: 5.145,
+      L: 215.315,
+      varpi: 318.15,
+      Omega: 125.08,
+      rates: { da: 0, dL: 390620.1, dvarpi: 4069.0, dOmega: -200.7 },
+    },
+    rotationPeriodDays: 27.3217, // tidally locked
+    axialTiltDeg: 6.68,
+    facts: {
+      diameterKm: 3474.8,
+      massKg: "7.346 × 10²² kg",
+      orbitalPeriod: "27.32 days (sidereal)",
+      dayLength: "29.5 Earth days (synchronous rotation)",
+      distanceFromSun: "~1 AU (orbits Earth)",
+      temperature: "-173 to 127 °C",
+      moons: 0,
+      axialTiltDeg: 6.68,
+      description:
+        "Earth's only natural satellite, formed ~4.5 billion years ago in a giant impact. It is " +
+        "tidally locked, always showing the same face to Earth. Its gravity drives the ocean tides " +
+        "and stabilizes Earth's axial tilt.",
+    },
+  },
+  {
     id: "venus",
     name: "Venus",
     kind: "planet",
@@ -233,6 +266,70 @@ const planets: CelestialBodyDef[] = [
     },
   },
   {
+    id: "phobos",
+    name: "Phobos",
+    kind: "moon",
+    parent: "mars",
+    radiusKm: 11.2,
+    elements: {
+      a: 6.267e-5,
+      e: 0.0151,
+      i: 1.08,
+      L: 200,
+      varpi: 300,
+      Omega: 90,
+      rates: { da: 0, dL: 4.124e7, dvarpi: 0, dOmega: 0 },
+    },
+    rotationPeriodDays: 0.31888, // tidally locked
+    axialTiltDeg: 0,
+    facts: {
+      diameterKm: 22.5,
+      massKg: "1.07 × 10¹⁶ kg",
+      orbitalPeriod: "0.319 days (7.7 hours)",
+      dayLength: "7.7 hours (synchronous rotation)",
+      distanceFromSun: "~1.5 AU (orbits Mars)",
+      temperature: "-180 to -80 °C",
+      moons: 0,
+      axialTiltDeg: 0,
+      description:
+        "Mars's inner moon, only ~22 km across. It orbits so close and so fast that it circles " +
+        "Mars in under 8 hours — faster than Mars rotates, so it rises in the west and sets in " +
+        "the east. Tidal forces are slowly pulling it in: it will spiral into Mars in ~50 million years.",
+    },
+  },
+  {
+    id: "deimos",
+    name: "Deimos",
+    kind: "moon",
+    parent: "mars",
+    radiusKm: 6.2,
+    elements: {
+      a: 1.5684e-4,
+      e: 0.0006,
+      i: 1.79,
+      L: 310,
+      varpi: 50,
+      Omega: 120,
+      rates: { da: 0, dL: 1.042e7, dvarpi: 0, dOmega: 0 },
+    },
+    rotationPeriodDays: 1.2624, // tidally locked
+    axialTiltDeg: 0,
+    facts: {
+      diameterKm: 12.4,
+      massKg: "1.51 × 10¹⁵ kg",
+      orbitalPeriod: "1.26 days (30.3 hours)",
+      dayLength: "30.3 hours (synchronous rotation)",
+      distanceFromSun: "~1.5 AU (orbits Mars)",
+      temperature: "-180 to -80 °C",
+      moons: 0,
+      axialTiltDeg: 0,
+      description:
+        "Mars's outer moon, ~12 km across — small enough to fit inside most cities. Like Phobos " +
+        "it is irregularly shaped and dark, and it is probably a captured asteroid from the main belt. " +
+        "It is slowly drifting away from Mars.",
+    },
+  },
+  {
     id: "jupiter",
     name: "Jupiter",
     kind: "planet",
@@ -267,6 +364,134 @@ const planets: CelestialBodyDef[] = [
         "A gas giant more massive than all other planets combined. The Great Red Spot is a " +
         "storm larger than Earth that has raged for at least 190 years. Jupiter's strong " +
         "magnetosphere and radiation belts are the largest magnetic structure in the solar system.",
+    },
+  },
+  {
+    id: "io",
+    name: "Io",
+    kind: "moon",
+    parent: "jupiter",
+    radiusKm: 1821.6,
+    elements: {
+      a: 0.0028187,
+      e: 0.0041,
+      i: 0.04,
+      L: 120,
+      varpi: 120,
+      Omega: 0,
+      rates: { da: 0, dL: 7.432e6, dvarpi: 0, dOmega: 0 },
+    },
+    rotationPeriodDays: 1.76914, // tidally locked
+    axialTiltDeg: 0,
+    facts: {
+      diameterKm: 3643.2,
+      massKg: "8.932 × 10²² kg",
+      orbitalPeriod: "1.77 days",
+      dayLength: "42.5 hours (synchronous rotation)",
+      distanceFromSun: "~5.2 AU (orbits Jupiter)",
+      temperature: "-143 °C (surface)",
+      moons: 0,
+      axialTiltDeg: 0,
+      description:
+        "The most volcanic world in the solar system. Jupiter's tidal flexing heats Io's interior, " +
+        "driving ~400 active volcanoes that blanketed the surface in sulfur and sulfur dioxide — " +
+        "no craters, no water. Its plumes rise 300+ km into space.",
+    },
+  },
+  {
+    id: "europa",
+    name: "Europa",
+    kind: "moon",
+    parent: "jupiter",
+    radiusKm: 1560.8,
+    elements: {
+      a: 0.0044857,
+      e: 0.009,
+      i: 0.47,
+      L: 200,
+      varpi: 200,
+      Omega: 0,
+      rates: { da: 0, dL: 3.703e6, dvarpi: 0, dOmega: 0 },
+    },
+    rotationPeriodDays: 3.55118, // tidally locked
+    axialTiltDeg: 0,
+    facts: {
+      diameterKm: 3121.6,
+      massKg: "4.800 × 10²² kg",
+      orbitalPeriod: "3.55 days",
+      dayLength: "85.3 hours (synchronous rotation)",
+      distanceFromSun: "~5.2 AU (orbits Jupiter)",
+      temperature: "-160 °C (surface)",
+      moons: 0,
+      axialTiltDeg: 0,
+      description:
+        "A cracked shell of water ice over a global saltwater ocean — likely holding twice the " +
+        "water of Earth's seas. The red-brown streaks on its otherwise blank surface are fissures " +
+        "where salty ice has welled up. A top candidate in the search for life beyond Earth.",
+    },
+  },
+  {
+    id: "ganymede",
+    name: "Ganymede",
+    kind: "moon",
+    parent: "jupiter",
+    radiusKm: 2634.1,
+    elements: {
+      a: 0.0071552,
+      e: 0.0013,
+      i: 0.2,
+      L: 300,
+      varpi: 300,
+      Omega: 0,
+      rates: { da: 0, dL: 1.838e6, dvarpi: 0, dOmega: 0 },
+    },
+    rotationPeriodDays: 7.15456, // tidally locked
+    axialTiltDeg: 0,
+    facts: {
+      diameterKm: 5268.2,
+      massKg: "1.4819 × 10²³ kg",
+      orbitalPeriod: "7.15 days",
+      dayLength: "171.7 hours (synchronous rotation)",
+      distanceFromSun: "~5.2 AU (orbits Jupiter)",
+      temperature: "-163 °C (surface)",
+      moons: 0,
+      axialTiltDeg: 0,
+      description:
+        "The largest moon in the solar system — bigger than the planet Mercury, and the only " +
+        "moon with its own intrinsic magnetic field. Its surface mixes dark, ancient terrain with " +
+        "bright, grooved ice. It likely hides a deep saline ocean beneath its crust.",
+    },
+  },
+  {
+    id: "callisto",
+    name: "Callisto",
+    kind: "moon",
+    parent: "jupiter",
+    radiusKm: 2410.3,
+    elements: {
+      a: 0.0125848,
+      e: 0.0074,
+      i: 0.19,
+      L: 60,
+      varpi: 60,
+      Omega: 0,
+      rates: { da: 0, dL: 7.879e5, dvarpi: 0, dOmega: 0 },
+    },
+    rotationPeriodDays: 16.689, // tidally locked
+    axialTiltDeg: 0,
+    facts: {
+      diameterKm: 4820.6,
+      massKg: "1.0759 × 10²³ kg",
+      orbitalPeriod: "16.69 days",
+      dayLength: "400.5 hours (synchronous rotation)",
+      distanceFromSun: "~5.2 AU (orbits Jupiter)",
+      temperature: "-155 °C (surface)",
+      moons: 0,
+      axialTiltDeg: 0,
+      description:
+        "The most heavily cratered body in the solar system — its surface is so ancient and " +
+        "saturated that new impacts erase as many craters as they create. Bright starburst marks " +
+        "like Valhalla are giant impact scars. Like Europa, it may harbor a subsurface ocean.",
     },
   },
   {
@@ -307,6 +532,71 @@ const planets: CelestialBodyDef[] = [
     },
   },
   {
+    id: "titan",
+    name: "Titan",
+    kind: "moon",
+    parent: "saturn",
+    radiusKm: 2574.7,
+    elements: {
+      a: 0.0081675,
+      e: 0.0288,
+      i: 0.35,
+      L: 150,
+      varpi: 150,
+      Omega: 0,
+      rates: { da: 0, dL: 8.246e5, dvarpi: 0, dOmega: 0 },
+    },
+    rotationPeriodDays: 15.9454, // tidally locked
+    axialTiltDeg: 0,
+    facts: {
+      diameterKm: 5149.4,
+      massKg: "1.3452 × 10²³ kg",
+      orbitalPeriod: "15.95 days",
+      dayLength: "382.7 hours (synchronous rotation)",
+      distanceFromSun: "~9.5 AU (orbits Saturn)",
+      temperature: "-179 °C (surface)",
+      moons: 0,
+      axialTiltDeg: 0,
+      description:
+        "The second-largest moon and the only one with a substantial atmosphere — thick nitrogen " +
+        "air at 1.5× Earth's surface pressure, wrapped in a deep orange photochemical haze. It has " +
+        "rivers, seas and lakes of liquid methane and ethane, completing a water-methane cycle in " +
+        "the cold.",
+    },
+  },
+  {
+    id: "rhea",
+    name: "Rhea",
+    kind: "moon",
+    parent: "saturn",
+    radiusKm: 763.8,
+    elements: {
+      a: 0.0035237,
+      e: 0.0011,
+      i: 0.35,
+      L: 250,
+      varpi: 250,
+      Omega: 0,
+      rates: { da: 0, dL: 2.910e6, dvarpi: 0, dOmega: 0 },
+    },
+    rotationPeriodDays: 4.5182, // tidally locked
+    axialTiltDeg: 0,
+    facts: {
+      diameterKm: 1527.6,
+      massKg: "2.3065 × 10²¹ kg",
+      orbitalPeriod: "4.52 days",
+      dayLength: "108.4 hours (synchronous rotation)",
+      distanceFromSun: "~9.5 AU (orbits Saturn)",
+      temperature: "-187 °C (surface)",
+      moons: 0,
+      axialTiltDeg: 0,
+      description:
+        "Saturn's second-largest moon, a cratered water-ice world nearly 1,500 km across. Its " +
+        "bright equatorial band is thought to be fine icy grains pulled in by Saturn's gravity. " +
+        "A faint tenuous atmosphere of molecular oxygen was detected around it.",
+    },
+  },
+  {
     id: "uranus",
     name: "Uranus",
     kind: "planet",
@@ -341,6 +631,38 @@ const planets: CelestialBodyDef[] = [
         "An ice giant tipped on its side — its 98° axial tilt means its poles take turns facing " +
         "the Sun for 42 years at a time, likely from an ancient giant impact. Methane in its " +
         "atmosphere gives it a pale cyan color.",
+    },
+  },
+  {
+    id: "titania",
+    name: "Titania",
+    kind: "moon",
+    parent: "uranus",
+    radiusKm: 788.4,
+    elements: {
+      a: 0.0029137,
+      e: 0.0011,
+      i: 0.33,
+      L: 80,
+      varpi: 80,
+      Omega: 0,
+      rates: { da: 0, dL: 1.510e6, dvarpi: 0, dOmega: 0 },
+    },
+    rotationPeriodDays: 8.7061, // tidally locked
+    axialTiltDeg: 0,
+    facts: {
+      diameterKm: 1576.8,
+      massKg: "3.527 × 10²⁰ kg",
+      orbitalPeriod: "8.71 days",
+      dayLength: "209 hours (synchronous rotation)",
+      distanceFromSun: "~19.2 AU (orbits Uranus)",
+      temperature: "-190 °C (surface)",
+      moons: 0,
+      axialTiltDeg: 0,
+      description:
+        "Uranus's largest moon, a water-ice world cut by enormous canyons and cliff systems over " +
+        "200 km long. It orbits in Uranus's equatorial plane — which, thanks to the planet's 98° " +
+        "tilt, means it circles the planet on its side.",
     },
   },
   {
@@ -381,43 +703,42 @@ const planets: CelestialBodyDef[] = [
         "object.",
     },
   },
+  {
+    id: "triton",
+    name: "Triton",
+    kind: "moon",
+    parent: "neptune",
+    radiusKm: 1353.4,
+    elements: {
+      // Retrograde orbit: inclination > 90° encodes the backward motion
+      a: 0.0023713,
+      e: 0.0001,
+      i: 156.8,
+      L: 270,
+      varpi: 270,
+      Omega: 0,
+      rates: { da: 0, dL: 2.237e6, dvarpi: 0, dOmega: 0 },
+    },
+    rotationPeriodDays: 5.8769, // tidally locked
+    axialTiltDeg: 0,
+    facts: {
+      diameterKm: 2706.8,
+      massKg: "2.139 × 10²² kg",
+      orbitalPeriod: "5.88 days",
+      dayLength: "141.1 hours (synchronous rotation)",
+      distanceFromSun: "~30 AU (orbits Neptune)",
+      temperature: "-235 °C (surface)",
+      moons: 0,
+      axialTiltDeg: 0,
+      description:
+        "Neptune's large moon orbits backwards — a giveaway that it is a captured Kuiper Belt " +
+        "object. It is the coldest known surface in the solar system. Nitrogen geysers vent over " +
+        "10 km from its south polar region, and its thin nitrogen atmosphere is the coldest ever measured.",
+    },
+  },
 ];
 
-export const MOON: CelestialBodyDef = {
-  id: "moon",
-  name: "Moon",
-  kind: "moon",
-  parent: "earth",
-  radiusKm: 1737.4,
-  elements: {
-    // Mean elements for the Moon's orbit about Earth (approximate)
-    a: 0.00257,
-    e: 0.0549,
-    i: 5.145,
-    L: 215.315,
-    varpi: 318.15,
-    Omega: 125.08,
-    rates: { da: 0, dL: 390620.1, dvarpi: 4069.0, dOmega: -200.7 },
-  },
-  rotationPeriodDays: 27.3217, // tidally locked
-  axialTiltDeg: 6.68,
-  facts: {
-    diameterKm: 3474.8,
-    massKg: "7.346 × 10²² kg",
-    orbitalPeriod: "27.32 days (sidereal)",
-    dayLength: "29.5 Earth days (synchronous rotation)",
-    distanceFromSun: "~1 AU (orbits Earth)",
-    temperature: "-173 to 127 °C",
-    moons: 0,
-    axialTiltDeg: 6.68,
-    description:
-      "Earth's only natural satellite, formed ~4.5 billion years ago in a giant impact. It is " +
-      "tidally locked, always showing the same face to Earth. Its gravity drives the ocean tides " +
-      "and stabilizes Earth's axial tilt.",
-  },
-};
-
-export const BODIES: CelestialBodyDef[] = [SUN, ...planets, MOON];
+export const BODIES: CelestialBodyDef[] = [SUN, ...planets];
 
 export function getBody(id: string): CelestialBodyDef {
   const body = BODIES.find((b) => b.id === id);
