@@ -336,23 +336,23 @@ export function marsTexture(): THREE.CanvasTexture {
 // polar caps with vortex mottling, then alternating cream/tan/rust zones
 // and belts converging on the pale Equatorial Zone.
 const JUPITER_STOPS: [number, [number, number, number]][] = [
-  [0.0, [162, 173, 187]],
-  [0.07, [174, 170, 156]],
-  [0.13, [146, 116, 90]],
-  [0.19, [212, 193, 157]],
-  [0.25, [168, 126, 88]],
-  [0.31, [229, 217, 191]],
-  [0.37, [185, 140, 96]],
-  [0.44, [232, 222, 197]],
+  [0.0, [124, 135, 149]],
+  [0.12, [133, 135, 140]],
+  [0.155, [157, 149, 131]],
+  [0.2, [146, 116, 90]],
+  [0.26, [212, 193, 157]],
+  [0.32, [168, 126, 88]],
+  [0.38, [229, 217, 191]],
+  [0.44, [185, 140, 96]],
   [0.5, [218, 198, 167]],
   [0.56, [185, 140, 96]],
-  [0.63, [229, 217, 191]],
-  [0.69, [168, 126, 88]],
-  [0.75, [212, 193, 157]],
-  [0.81, [146, 116, 90]],
-  [0.87, [174, 170, 156]],
-  [0.94, [162, 173, 187]],
-  [1.0, [162, 173, 187]],
+  [0.62, [229, 217, 191]],
+  [0.68, [168, 126, 88]],
+  [0.74, [212, 193, 157]],
+  [0.8, [146, 116, 90]],
+  [0.845, [157, 149, 131]],
+  [0.88, [133, 135, 140]],
+  [1.0, [124, 135, 149]],
 ];
 
 function jupiterBandColor(t: number): [number, number, number] {
@@ -389,19 +389,19 @@ export function jupiterTexture(): THREE.CanvasTexture {
       let g = g0 * mod;
       let b = b0 * mod;
 
-      // Polar vortex mottling
-      const polar = 1 - smooth(0.0, 0.09, Math.abs(v - 0.5) * 2);
+      // Polar vortex mottling — kept subtle so the caps stay uniform
+      const polar = 1 - smooth(0.0, 0.12, Math.abs(v - 0.5) * 2);
       const mottle = fbmCyl(u, v, seed + 90, 4, 6, 0.5);
-      const pm = polar * (mottle - 0.5) * 0.3;
+      const pm = polar * (mottle - 0.5) * 0.12;
       r *= 1 + pm;
       g *= 1 + pm;
       b *= 1 + pm;
 
-      // Great Red Spot: compact, sharp, with a pale collar. Real size is
-      // ~4% of the circumference wide (~2% tall).
+      // Great Red Spot: compact, sharp, with a pale collar. An oval
+      // elongated along the rotation direction (east-west ~2.5x its height).
       let du = Math.abs(u - 0.7);
       if (du > 0.5) du = 1 - du;
-      const q = Math.sqrt((du / 0.024) ** 2 + ((v - 0.62) / 0.048) ** 2);
+      const q = Math.sqrt((du / 0.02) ** 2 + ((v - 0.62) / 0.012) ** 2);
       const core = 1 - smooth(0.6, 1.0, q);
       const collar = smooth(0.72, 1.0, q) * (1 - smooth(1.15, 1.5, q));
       if (core > 0) {
@@ -421,11 +421,12 @@ export function jupiterTexture(): THREE.CanvasTexture {
       }
 
       // Small white oval storms in the south temperate zone
+      // Wide in the rotation direction, narrow in latitude
       const ovals: [number, number, number, number][] = [
-        [0.35, 0.58, 0.012, 0.022],
-        [0.55, 0.665, 0.009, 0.018],
-        [0.15, 0.55, 0.011, 0.02],
-        [0.84, 0.575, 0.01, 0.017],
+        [0.35, 0.58, 0.02, 0.011],
+        [0.55, 0.665, 0.016, 0.009],
+        [0.15, 0.55, 0.018, 0.01],
+        [0.84, 0.575, 0.015, 0.0085],
       ];
       for (const [ou, ov, su, sv] of ovals) {
         let ouw = Math.abs(u - ou);
