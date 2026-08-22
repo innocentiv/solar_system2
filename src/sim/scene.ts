@@ -434,15 +434,50 @@ function buildBody(def: CelestialBodyDef): BodyScene {
 
   if (def.id === "sun") {
     // The real Sun's surface is ~10⁶× brighter than a full-scale white
-    // reference, so we push the material into HDR (multiplier > 1). ACES
-    // tone mapping then rolls the core off to incandescent white with a
-    // warm limb, and the bloom pass picks it up as a true light source.
+    // reference, so we push the material into HDR (tint > 1). The custom
+    // shader adds limb brightening — like in space photos, the disk edge
+    // glows harder than the center — and OutputPass applies ACES, while
+    // the bloom pass picks the disk up as a true light source.
+    const sunMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        map: { value: T.sunTexture() },
+        uTint: { value: new THREE.Color(2.6, 2.2, 1.6) },
+      },
+      vertexShader: /* glsl */ `
+        #include <common>
+        #include <logdepthbuf_pars_vertex>
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        varying vec3 vViewDir;
+        void main() {
+          vUv = uv;
+          vec4 worldPos = modelMatrix * vec4(position, 1.0);
+          vNormal = normalize(mat3(modelMatrix) * normal);
+          vViewDir = normalize(cameraPosition - worldPos.xyz);
+          vec4 mvPosition = viewMatrix * worldPos;
+          gl_Position = projectionMatrix * mvPosition;
+          #include <logdepthbuf_vertex>
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        #include <logdepthbuf_pars_fragment>
+        uniform sampler2D map;
+        uniform vec3 uTint;
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        varying vec3 vViewDir;
+        void main() {
+          vec3 base = texture2D(map, vUv).rgb * uTint;
+          float ndv = clamp(dot(normalize(vNormal), normalize(vViewDir)), 0.0, 1.0);
+          float limb = 1.0 + 1.1 * pow(1.0 - ndv, 2.2);
+          gl_FragColor = vec4(base * limb, 1.0);
+          #include <logdepthbuf_fragment>
+        }
+      `,
+    });
     mesh = new THREE.Mesh(
       new THREE.SphereGeometry(radius, 64, 48),
-      new THREE.MeshBasicMaterial({
-        map: T.sunTexture(),
-        color: new THREE.Color(3.6, 3.1, 2.2),
-      }),
+      sunMaterial,
     );
     // Corona glow sprite
     const sprite = new THREE.Sprite(
@@ -455,6 +490,16 @@ function buildBody(def: CelestialBodyDef): BodyScene {
     );
     sprite.scale.setScalar(radius * 3.4);
     group.add(sprite);
+
+    // The mesh must be in the scene graph: planets get this via the
+    // shared tilt-group code in the else branch below, but the sun
+    // branch returns to it separately — without this the disk was
+    // never rendered at all (only the corona sprite was visible).
+    const tiltGroup = new THREE.Group();
+    tiltGroup.rotation.z = THREE.MathUtils.degToRad(def.axialTiltDeg);
+    tiltGroup.add(mesh);
+    group.add(tiltGroup);
+    mesh.userData.tiltGroup = tiltGroup;
   } else {
     const isGasGiant = ["jupiter", "saturn", "uranus", "neptune"].includes(
       def.id,

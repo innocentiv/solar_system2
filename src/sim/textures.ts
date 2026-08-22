@@ -187,10 +187,32 @@ export function sunTexture(): THREE.CanvasTexture {
   return renderTexture(
     "sun",
     (u, v, seed) => {
-      const n = fbmCyl(u, v, seed, 6, 5, 0.6);
-      const n2 = fbmCyl(u, v, seed + 500, 4, 14, 0.5);
-      const t = clamp01(n * 0.7 + n2 * 0.45 - 0.12);
-      return [255, 175 + 60 * t, 40 + 120 * t * t];
+      // fbmCyl maps longitude onto a 2π circumference but latitude onto
+      // only 1 noise unit — isotropic features need v stretched ~π so
+      // sunspots read as round blobs, not tall vertical strips.
+      const sv = v * Math.PI;
+      // Granulation: bright photospheric cells
+      const n = fbmCyl(u, sv, seed, 6, 5, 0.6);
+      const n2 = fbmCyl(u, sv, seed + 500, 4, 14, 0.5);
+      const gran = clamp01(n * 0.6 + n2 * 0.4);
+      // Incandescent white with a faint warm variation (never orange —
+      // that is ground-atmosphere color cast, not the real Sun)
+      let r = 255;
+      let g = 236 + 18 * gran;
+      let b = 205 + 50 * gran;
+      // Sunspots at photo scale: in solar imagery spots are minuscule
+      // compared to the disk (~1/20 of it for large groups, ~1/60 for
+      // individual spots), and they concentrate in active zones near
+      // the equator, never in the polar caps.
+      const zone = 1 - smooth(0.18, 0.42, Math.abs(v - 0.5) * 2);
+      const s1 = fbmCyl(u, sv, seed + 777, 3, 20, 0.55);
+      const s2 = fbmCyl(u, sv, seed + 999, 4, 55, 0.5);
+      const spot =
+        clamp01(smooth(0.62, 0.8, s1) + 0.7 * smooth(0.78, 0.9, s2)) * zone;
+      r += (40 - r) * spot * 0.85;
+      g += (24 - g) * spot * 0.85;
+      b += (22 - b) * spot * 0.85;
+      return [r, g, b];
     },
     101,
   );
@@ -775,12 +797,16 @@ export function glowSprite(): THREE.CanvasTexture {
   // at t ≈ 0.59. The corona must fade fast just outside that — in space the
   // corona is a tight, faint, whitish halo, not a large orange glow (the
   // orange in ground photos is atmospheric scattering).
+  // The corona must START at the disk limb (t ≈ 0.59) and be fully
+  // transparent inside it — the previous version painted a 0.9-alpha
+  // white over the disk, blowing it past the tone-mapping white point
+  // so the center read as a see-through blob.
   const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
-  g.addColorStop(0, "rgba(255, 250, 235, 0.9)");
-  g.addColorStop(0.59, "rgba(255, 250, 235, 0.5)");
-  g.addColorStop(0.7, "rgba(255, 240, 205, 0.2)");
-  g.addColorStop(0.85, "rgba(255, 225, 175, 0.05)");
-  g.addColorStop(1, "rgba(255, 215, 160, 0)");
+  g.addColorStop(0, "rgba(0, 0, 0, 0)");
+  g.addColorStop(0.59, "rgba(255, 248, 228, 0.55)");
+  g.addColorStop(0.68, "rgba(255, 243, 214, 0.2)");
+  g.addColorStop(0.82, "rgba(255, 234, 196, 0.06)");
+  g.addColorStop(1, "rgba(255, 224, 180, 0)");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, s, s);
   const tex = new THREE.CanvasTexture(canvas);

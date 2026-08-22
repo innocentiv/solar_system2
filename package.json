@@ -12,8 +12,10 @@
     "three": "^0.185.1"
   },
   "devDependencies": {
+    "@shaderfrog/glsl-parser": "^7.0.1",
     "@types/node": "^26.2.0",
     "@types/three": "^0.185.4",
+    "rimraf": "^5.0.10",
     "typescript": "^7.0.2",
     "vite": "^8.2.2"
   }
