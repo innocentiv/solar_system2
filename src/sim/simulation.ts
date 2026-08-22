@@ -113,15 +113,31 @@ export class Simulation {
     }
     const bs = this.refs.bodies.get(id)!;
     const target = bs.group.position.clone();
-    // True scale: approach at ~9 body radii
-    const dist = Math.max(bs.radius * 9, 0.001);
-    this.refs.controls.minDistance = Math.max(0.0002, dist * 0.02);
+    // True scale: approach close enough that the sphere fills a good part
+    // of the view
+    const dist = Math.max(bs.radius * 4.5, 0.001);
+    this.refs.controls.minDistance = Math.max(0.0002, dist * 0.1);
 
-    // Approach from a direction that keeps the Sun mostly behind the camera
-    const dir = this.refs.camera.position.clone().sub(target);
-    if (dir.lengthSq() < 1e-6) dir.set(-1, 0.6, 1);
-    dir.normalize();
-    dir.y = Math.max(dir.y, 0.35); // never fly straight through the ecliptic plane
+    // Deterministic sun-relative approach: from the body, aim toward the Sun
+    // so the lit hemisphere faces the camera, swing ~22° off the sun line
+    // for a sliver of the shadowed limb (terminator), and lift ~17° above
+    // the ecliptic. Derived purely from body position (not current camera),
+    // so repeated clicks settle at the same angle.
+    let dir: THREE.Vector3;
+    if (target.lengthSq() < 1e-12) {
+      // The Sun sits at the origin — no sun-relative direction exists,
+      // so keep the current viewing direction with a slight lift.
+      dir = this.refs.camera.position.clone();
+      dir.y = Math.max(dir.y, 0.35);
+    } else {
+      const toSun = target.clone().negate().normalize();
+      const up = new THREE.Vector3(0, 1, 0);
+      const axis = new THREE.Vector3().crossVectors(up, toSun);
+      if (axis.lengthSq() < 1e-8) axis.set(1, 0, 0);
+      axis.normalize();
+      dir = toSun.clone().applyAxisAngle(axis, 0.38);
+      dir.addScaledVector(up, 0.3);
+    }
     dir.normalize();
 
     this.tween = {
@@ -211,13 +227,27 @@ export class Simulation {
 
   /** Keep the marker dots on their bodies; hide the selected body's dot (black + additive = invisible). */
   private updateMarkers(): void {
-    const posAttr = this.refs.markers.geometry.getAttribute("position") as THREE.BufferAttribute;
-    const colAttr = this.refs.markers.geometry.getAttribute("color") as THREE.BufferAttribute;
+    const posAttr = this.refs.markers.geometry.getAttribute(
+      "position",
+    ) as THREE.BufferAttribute;
+    const colAttr = this.refs.markers.geometry.getAttribute(
+      "color",
+    ) as THREE.BufferAttribute;
     let i = 0;
     for (const [id, bs] of this.refs.bodies) {
-      posAttr.setXYZ(i, bs.group.position.x, bs.group.position.y, bs.group.position.z);
+      posAttr.setXYZ(
+        i,
+        bs.group.position.x,
+        bs.group.position.y,
+        bs.group.position.z,
+      );
       const black = id === this.selectedId;
-      colAttr.setXYZ(i, black ? 0 : colAttr.getX(i), black ? 0 : colAttr.getY(i), black ? 0 : colAttr.getZ(i));
+      colAttr.setXYZ(
+        i,
+        black ? 0 : colAttr.getX(i),
+        black ? 0 : colAttr.getY(i),
+        black ? 0 : colAttr.getZ(i),
+      );
       i++;
     }
     posAttr.needsUpdate = true;
